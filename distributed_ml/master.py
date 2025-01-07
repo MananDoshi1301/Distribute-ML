@@ -1,4 +1,6 @@
 import sys
+from .app.utilities.split_data import split_data
+
 def hello():
     print("Hello From module!")
 
@@ -32,5 +34,14 @@ class Master:
         self.task_params = final_params
 
     def run(self):
+        # Validate incoming code and data        
 
+        # Split data file 
+        filename, n_partitions = self.task_params['MODEL_DATA'], self.task_params['TASK_PARTITION']
+        new_file_names: list[str] = split_data(filename, n_partitions)
+        print(new_file_names)
+            # push data to cloud            
+            # Create a task. Push to sql db
+
+        # Push tasks to queue
         ...
