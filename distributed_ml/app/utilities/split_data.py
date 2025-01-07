@@ -1,9 +1,13 @@
-import pandas as pd
+import pandas as pd, os
 from pandas import DataFrame
 
 def extract_filename(filename: str) -> str:
     filename_list: list[str] = filename.split(".")
     return filename_list[0]    
+
+def save_chunk(new_filename: str, df: DataFrame, start: int, end: int):
+    filefolder = "data/"            
+    df.iloc[start: end].to_csv(os.path.join(filefolder, new_filename), index=False)
 
 def split_data(filename: str, n: int) -> list[str]:
     "Splits file into n partitions and returns filename in a list"
@@ -19,7 +23,7 @@ def split_data(filename: str, n: int) -> list[str]:
             new_filename = f"{extract_filename(filename)}_chunk_{i + 1}.csv"
                         
             # Temporary. Should be removed when pushing to db
-            df.iloc[start: end].to_csv(new_filename, index=False)
+            save_chunk(new_filename, df, start, end)            
 
             new_filename_list.append(new_filename)
         return new_filename_list
