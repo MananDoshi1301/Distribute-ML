@@ -2,8 +2,16 @@ import pandas as pd, os
 from pandas import DataFrame
 
 def extract_filename(filename: str) -> str:
-    filename_list: list[str] = filename.split(".")
-    return filename_list[0]    
+    strip_slash: list[str] = filename.split("/")
+    if not strip_slash[-1]: 
+        print("Error on stripping slash")
+        return 'data'
+    filename: str = strip_slash[-1] 
+    strip_extension: list[str] = filename.split(".")
+    if not strip_extension[0]: 
+        print("Error on stripping extension")
+        return 'data'
+    return strip_extension[0]    
 
 def save_chunk(new_filename: str, df: DataFrame, start: int, end: int):
     filefolder = "data/"            
