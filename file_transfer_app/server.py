@@ -30,7 +30,32 @@ def return_response(func):
 
 # server routes
 
-@server.post("/upload")
+@server.post("/uploads/requirements/{file_id}")
+async def upload_requirements(file_id: str, file: UploadFile = File(...)):
+    content = await file.read()   
+    if not file_id: return {"error": "Missing file_id"}, 400 
+    try:
+        db = get_db_conn()
+        cursor = db.cursor(dictionary=True)
+        query = """
+        UPDATE models
+        SET requirements_filename = %s,
+        requirements_content = %s
+        WHERE id = %s;        
+        """
+        db.start_transaction()
+        cursor.execute(query, (file.filename, content, file_id))
+        db.commit()
+        return {"message": "Requirements inserted succesfully!", "filename": file.filename}, 200
+    except Exception as e:
+        db.rollback()
+        print(e)
+        return {"error": "Internal Server Error"}, 500    
+    finally:
+        cursor.close()
+        db.close()
+
+@server.post("/uploads/model")
 async def upload_files(file: UploadFile = File(...)):    
     
     content = await file.read()
@@ -39,7 +64,7 @@ async def upload_files(file: UploadFile = File(...)):
         db = get_db_conn()
         cursor = db.cursor(dictionary=True)
         query = """
-        INSERT INTO models (id, filename, content, upload_time)
+        INSERT INTO models (id, model_filename, model_content, upload_time)
         VALUES (%s, %s, %s, %s);
         """
         db.start_transaction()
