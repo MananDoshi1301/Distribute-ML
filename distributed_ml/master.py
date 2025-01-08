@@ -1,5 +1,7 @@
 import sys
 from .app.utilities.split_data import split_data
+from .database.init_redis import redis_queue_connection
+import requests
 
 def hello():
     print("Hello From module!")
@@ -33,15 +35,23 @@ class Master:
         print("Task config set successfully!")
         self.task_params = final_params
 
-    def run(self):
-        # Validate incoming code and data        
+    def train(self):
+        #-- Validate incoming code and data     
+         
+        #-- Push data to cloud
+        
+        #-- Push model to database == POST request to file_transfer_app 
+        filepath = self.task_params["MODEL_ENTRYPOINT"]    
+        try:
+            url = f"http://0.0.0.0:8000/upload"
+            with open(filepath, 'rb') as file:
+                file_dict = {'file': file}
+                data = requests.post(url, files=file_dict)
+                print(data)
+        except Exception as e:
+            print(e)
 
-        # Split data file 
-        filename, n_partitions = self.task_params['MODEL_DATA'], self.task_params['TASK_PARTITION']
-        new_file_names: list[str] = split_data(filename, n_partitions)
-        print(new_file_names)
-            # push data to cloud            
-            # Create a task. Push to sql db
+        # POST request to API server with params
 
-        # Push tasks to queue
+        # -----------------------------------------------        
         ...
