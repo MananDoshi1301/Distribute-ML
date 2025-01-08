@@ -37,6 +37,25 @@ class Master:
         print("Task config set successfully!")
         self.task_params = final_params
 
+    def __store_model_requirements(self, model_path, url_path):        
+        try:
+            fileserver_url = self.env_configs.get_fileserver_url()
+            url = f"{fileserver_url}/uploads/{url_path}"
+            with open(model_path, 'rb') as file:
+                file_dict = {"file": file}
+                data: requests = requests.post(url, files=file_dict)
+                data: list = json.loads(data.text)
+                response: dict = data[0]
+                if 'error' in response:
+                    print("Error while storing model. Quitting the program")
+                    sys.exit()
+
+                return response
+        except Exception as e:
+            print("Error in library", e)
+            sys.exit()
+
+
     def train(self):
         """Pushes data to cloud, model to server database and initiates training on worker"""
         #-- Validate incoming code and data     
@@ -53,22 +72,22 @@ class Master:
         }
         
         #-- Push model to database == POST request to file_transfer_app 
-        filepath = self.task_params["MODEL_ENTRYPOINT"]    
-        try:
-            fileserver_url = self.env_configs.get_fileserver_url()
-            url = f"{fileserver_url}/upload"
-            with open(filepath, 'rb') as file:
-                file_dict = {'file': file}
-                data: str = requests.post(url, files=file_dict)
-                data: list = json.loads(data.text)
-                response: dict = data[0]
-                model_id: str = response['file_id']
-                model_name: str = response['filename']
-                
-                #<--> Final important info
-                model_dict: dict = {"id": model_id, "filename": model_name}
-        except Exception as e:
-            print(e)
+        model_path = self.task_params["MODEL_ENTRYPOINT"]            
+        response: dict = self.__store_model_requirements(model_path, 'model')
+        model_id: str = response['file_id']
+        model_name: str = response['filename']
+        #<--> Final important info
+        model_dict: dict = {"id": model_id, "filename": model_name}        
+
+        #-- Push requirements.txt file
+        file_id = model_id
+        requirements_path = self.task_params["MODEL_REQUIREMENTS"]
+        response: dict = self.__store_model_requirements(requirements_path, f'requirements/{file_id}')
+        requirements_name: str = response['filename']                
+        requirements_dict: dict = {"id": file_id, "filename": requirements_name}
+
+        print("Model:", model_dict)
+        print("Requirements:", requirements_dict)
 
         # POST request to API server with params
 

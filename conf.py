@@ -8,7 +8,7 @@ class DistributionConfig:
     MODEL_DATA = "./data.csv"
     
     # (default=requirements.txt)
-    MODEL_REQUIREMENTS = "requirements.txt"
+    MODEL_REQUIREMENTS = "./requirements.txt"
     
     # (default=10)
     TASK_PARTITION = 2
