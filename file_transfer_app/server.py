@@ -45,7 +45,7 @@ async def upload_files(file: UploadFile = File(...)):
         db.start_transaction()
         cursor.execute(query, (file_id, file.filename, content, datetime.now()))
         db.commit()
-        return {"message": "Model inserted successfully!", "file_id": file_id}, 200        
+        return {"message": "Model inserted successfully!", "file_id": file_id, "filename": file.filename}, 200        
     except Exception as e:
         db.rollback()
         print(e)
