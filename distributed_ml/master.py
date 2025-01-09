@@ -64,7 +64,7 @@ class Master:
         # data_filename, partitions = self.task_params["MODEL_DATA"], self.task_params["TASK_PARTITION"]        
         # data_upload = CreateDataPartitions(data_filename, partitions)
         # data_upload.initiate()
-        # new_names_list: list[tuple] = data_upload.new_filename_list        
+        # new_names_list: list[tuple] = data_upload.get_new_filename_list()        
 
         # #<--> Final data info
         # data_dict: dict = {            
@@ -99,9 +99,16 @@ class Master:
         # }
         # print("final_data:", final_dict)
 
-        # final_data= {'data': {'filenames': [('data/data_chunk_1.csv', '143e2b7b-8129-4336-8141-8a0fc1881259-data_chunk_1.csv'), ('data/data_chunk_2.csv', '2c1310ed-18d2-4a01-980f-405e8765e592-data_chunk_2.csv')], 'partitions': 2}, 'model': {'id': 'e4ca6707-4e80-4fbc-acdf-b607d58666e0', 'filename': 'model.py'}, 'requirements': {'id': 'e4ca6707-4e80-4fbc-acdf-b607d58666e0', 'filename': 'requirements.txt'}}
+        final_data= {
+        'data': {'filenames': [('data_chunk_1.csv', '143e2b7b-8129-4336-8141-8a0fc1881259-data_chunk_1.csv'), ('data_chunk_2.csv', '2c1310ed-18d2-4a01-980f-405e8765e592-data_chunk_2.csv')], 'partitions': 2}, 
+        'model': {'id': 'e4ca6707-4e80-4fbc-acdf-b607d58666e0', 'filename': 'model.py'}, 
+        'requirements': {'id': 'e4ca6707-4e80-4fbc-acdf-b607d58666e0', 'filename': 'requirements.txt'}}
 
         # POST request to API server with params
+        try:
+            url = f"{self.env_configs.get_task_manager_server_url()}/tasks"            
+            response = requests.post(url, json=final_data)            
+        except Exception as e:
+            print("Error submitting tasks to manager:", e)
 
-        # -----------------------------------------------        
-        ...
+        # -----------------------------------------------                

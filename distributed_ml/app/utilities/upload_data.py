@@ -35,6 +35,15 @@ class CreateDataPartitions:
         self.__access_key_id: str = access_keys[0]
         self.__secret_access_key: str = access_keys[1]
     
+    def get_new_filename_list(self) -> list[tuple]:
+        return_list = []
+        for file in enumerate(self.new_filename_list):
+            filename = file[0]
+            id = file[1]
+            return_list.append((os.path.basename(filename), id))
+            return return_list
+
+
     def split_data(self) -> list[str]: 
         "Splits file into n partitions and returns filename in a list"
 
@@ -91,3 +100,4 @@ class CreateDataPartitions:
         self.split_data()
         print("Pushing Data to Cloud")
         self.push_data_to_cloud()
+        # Delete files on loacl once successfulyy uploaded
