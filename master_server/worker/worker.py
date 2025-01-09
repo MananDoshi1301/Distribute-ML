@@ -1,31 +1,46 @@
 import os, subprocess, sys
-from .database import MySQL_Socket
 from mysql.connector import MySQLConnection
-from .utilities.fetch_sql_data import fetch_mysql_data
+from worker.utilities.fetch_sql_data import fetch_mysql_data
+from worker.database import MySQL_Socket
 
 class Worker:
     def __init__(self, data_package: dict):
-        self.mysql_client_fetcher: MySQLConnection = MySQL_Socket.client_fetcher()        
+        mysql_socket = MySQL_Socket()        
+        self.mysql_client_fetcher: MySQLConnection = mysql_socket.client_fetcher()        
         self.data_package: dict = data_package
 
     def fetch_task_data(self):
         """Fetch model, requirements from mysql db"""
         record_id: str = self.data_package['record_id']
-        model_and_requirements = fetch_mysql_data(self.mysql_client_fetcher, record_id)
-        if not model_and_requirements: 
+        task_data = fetch_mysql_data(self.mysql_client_fetcher, record_id)
+        if not task_data: 
             print("Error fetching data from mysql. Quitting program!")
-            sys.exit()
-        print(model_and_requirements)        
+           
+        # data = {
+        #     "id": self.id,
+        #     "model_filename": self.model_filename,
+        #     "model_content": self.model_content,
+        #     "requirements_filename": self.requirements_filename,
+        #     "requirements_content": self.requirements_content,
+        #     "upload_time": self.upload_time
+        # }
+
+
+        print(task_data)        
 
     def fetch_model_training_data(self):
         """Fetch training data chunk from cloud"""
+        ...
+
+    def install_env_requirements(self):
+        """Install environment requirements"""
         ...
 
     def execute_model_training(self):
         ...
     
 
-def execute_model(self, params: dict):
+def execute_model(params: dict):
     """This install and runs model on worker node"""
     
     # Extract data params
@@ -40,11 +55,11 @@ def execute_model(self, params: dict):
     # fetch model, requirements, data
     worker.fetch_task_data()
     
-    # install requirements
-    worker.install_env_requirements()
-
     # fetch data
     worker.fetch_model_training_data()
+    
+    # install requirements
+    worker.install_env_requirements()
 
     # run model.py
     worker.execute_model_training()

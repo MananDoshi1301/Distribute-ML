@@ -1,12 +1,14 @@
-from flask import Flask, request, jsonify
-from master_server.app_configure import create_app
 import uuid
-from app.queue import RedisQueue
+from flask import Flask, request, jsonify
 from rq import Queue
-from .worker.worker import execute_model
+from app_configure import create_app
+from app.queue import RedisQueue
+from worker.worker import execute_model
 
 server: Flask = create_app()
- 
+
+# setup config
+
 # Initialize redis
 
 
@@ -30,7 +32,7 @@ def process_task():
     data_dict = data['data']
     record_id = data['record_id']
 
-    rq_client: Queue = RedisQueue()
+    rq_client: Queue = RedisQueue().get_training_queue()
 
     # Push tasks in queue
     for file_tuple in data_dict['filenames']:        
@@ -38,7 +40,7 @@ def process_task():
             'data': file_tuple,
             'record_id': record_id
         }
-        rq_client.enqueue(execute_model, data_params)
+        job = rq_client.enqueue(execute_model, data_params)
         
 
     return jsonify({"message": "Route sucess"}), 200
