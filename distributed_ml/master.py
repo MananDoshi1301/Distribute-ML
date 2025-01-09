@@ -1,5 +1,5 @@
 import sys
-from .app.utilities.split_data import split_data
+from .app.utilities.upload_data import CreateDataPartitions
 from .conf.base import BaseConfig
 import requests, json
 
@@ -60,34 +60,46 @@ class Master:
         """Pushes data to cloud, model to server database and initiates training on worker"""
         #-- Validate incoming code and data     
          
-        #-- Push data to cloud 
-        # (Temporary hack) change later
-        data_filename, partitions = self.task_params["MODEL_DATA"], self.task_params["TASK_PARTITION"]
-        new_names_list: list[str] = split_data(data_filename, partitions)
+        #-- Push data to cloud         
+        # data_filename, partitions = self.task_params["MODEL_DATA"], self.task_params["TASK_PARTITION"]        
+        # data_upload = CreateDataPartitions(data_filename, partitions)
+        # data_upload.initiate()
+        # new_names_list: list[tuple] = data_upload.new_filename_list        
 
-        #<-->
-        data_dict: dict = {
-            "filenames": new_names_list,
-            "partitions": partitions,
-        }
+        # #<--> Final data info
+        # data_dict: dict = {            
+        #     "filenames": new_names_list,
+        #     "partitions": partitions,
+        # }
         
-        #-- Push model to database == POST request to file_transfer_app 
-        model_path = self.task_params["MODEL_ENTRYPOINT"]            
-        response: dict = self.__store_model_requirements(model_path, 'model')
-        model_id: str = response['file_id']
-        model_name: str = response['filename']
-        #<--> Final important info
-        model_dict: dict = {"id": model_id, "filename": model_name}        
+        # #-- Push model to database == POST request to file_transfer_app 
+        # model_path = self.task_params["MODEL_ENTRYPOINT"]            
+        # response: dict = self.__store_model_requirements(model_path, 'model')
+        # model_id: str = response['file_id']
+        # model_name: str = response['filename']
+        # #<--> Final model info
+        # model_dict: dict = {"id": model_id, "filename": model_name}        
 
-        #-- Push requirements.txt file
-        file_id = model_id
-        requirements_path = self.task_params["MODEL_REQUIREMENTS"]
-        response: dict = self.__store_model_requirements(requirements_path, f'requirements/{file_id}')
-        requirements_name: str = response['filename']                
-        requirements_dict: dict = {"id": file_id, "filename": requirements_name}
+        # #-- Push requirements.txt file
+        # file_id = model_id
+        # requirements_path = self.task_params["MODEL_REQUIREMENTS"]
+        # response: dict = self.__store_model_requirements(requirements_path, f'requirements/{file_id}')
+        # requirements_name: str = response['filename']                
+        # #<--> Final requirements info
+        # requirements_dict: dict = {"id": file_id, "filename": requirements_name}
 
-        print("Model:", model_dict)
-        print("Requirements:", requirements_dict)
+        # print("Data:", data_dict)
+        # print("Model:", model_dict)
+        # print("Requirements:", requirements_dict)
+
+        # final_dict = {
+        #     "data": data_dict,
+        #     "model": model_dict,
+        #     "requirements": requirements_dict
+        # }
+        # print("final_data:", final_dict)
+
+        # final_data= {'data': {'filenames': [('data/data_chunk_1.csv', '143e2b7b-8129-4336-8141-8a0fc1881259-data_chunk_1.csv'), ('data/data_chunk_2.csv', '2c1310ed-18d2-4a01-980f-405e8765e592-data_chunk_2.csv')], 'partitions': 2}, 'model': {'id': 'e4ca6707-4e80-4fbc-acdf-b607d58666e0', 'filename': 'model.py'}, 'requirements': {'id': 'e4ca6707-4e80-4fbc-acdf-b607d58666e0', 'filename': 'requirements.txt'}}
 
         # POST request to API server with params
 
