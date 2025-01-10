@@ -1,7 +1,8 @@
-import os, subprocess, sys
 from mysql.connector import MySQLConnection
 from worker.utilities.fetch_sql_data import fetch_mysql_data
 from worker.database import MySQL_Socket
+from worker.utilities.create_files import create_files
+from worker.utilities.delete_files import delete_files
 
 class Worker:
     def __init__(self, data_package: dict):
@@ -9,13 +10,20 @@ class Worker:
         self.mysql_client_fetcher: MySQLConnection = mysql_socket.client_fetcher()        
         self.data_package: dict = data_package
 
+        self.task_data_path = "./task_data"
+        self.record_id = data_package['record_id']
+
+    def __del__(self):
+        # delete_files(self.record_id, self.task_data_path)
+        ...
+
     def fetch_task_data(self):
         """Fetch model, requirements from mysql db"""
         record_id: str = self.data_package['record_id']
-        task_data = fetch_mysql_data(self.mysql_client_fetcher, record_id)
+        task_data: dict = fetch_mysql_data(self.mysql_client_fetcher, record_id)
         if not task_data: 
             print("Error fetching data from mysql. Quitting program!")
-           
+        
         # data = {
         #     "id": self.id,
         #     "model_filename": self.model_filename,
@@ -25,8 +33,7 @@ class Worker:
         #     "upload_time": self.upload_time
         # }
 
-
-        print(task_data)        
+        create_files(task_data["requirements_content"], task_data["model_content"], self.record_id, self.task_data_path)           
 
     def fetch_model_training_data(self):
         """Fetch training data chunk from cloud"""

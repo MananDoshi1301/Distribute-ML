@@ -11,10 +11,10 @@ def fetch_mysql_data(connection: MySQLConnection, id: str) -> dict:
         FROM models WHERE id = %s;
         """
         cursor.execute(query, (id,))
-        data = cursor.fetchone()        
+        data = cursor.fetchone()                
         if not data: 
             print("Error in fetching data!")
-            return {}        
+            return {}                
         model_obj = Models(data[0], data[1], data[2], data[3], data[4])                
         return model_obj.get_dict()
     except Exception as e:

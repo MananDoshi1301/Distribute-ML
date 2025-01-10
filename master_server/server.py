@@ -39,6 +39,7 @@ def process_task():
     # Task_id
     task_id = str(uuid.uuid4())
     
+    #  Getting client
     try: rq_client: Queue = RedisQueue().get_training_queue()
     except Exception as e:
         err_res["error"] = "Error setting queue"
