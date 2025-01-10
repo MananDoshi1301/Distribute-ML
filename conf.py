@@ -1,4 +1,4 @@
-from distributed_ml.master import Master
+from distribute_ml.master import Master
 
 class DistributionConfig:
     # required
