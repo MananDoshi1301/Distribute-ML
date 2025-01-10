@@ -7,7 +7,7 @@ from worker.utilities.delete_files import delete_files
 class Worker:
     def __init__(self, data_package: dict):
         mysql_socket = MySQL_Socket()        
-        self.mysql_client_fetcher: MySQLConnection = mysql_socket.client_fetcher()        
+        self.mysql_client_fetcher: MySQLConnection | None = mysql_socket.client_fetcher()        
         self.data_package: dict = data_package
 
         self.task_data_path = "./task_data"
@@ -20,20 +20,23 @@ class Worker:
     def fetch_task_data(self):
         """Fetch model, requirements from mysql db"""
         record_id: str = self.data_package['record_id']
-        task_data: dict = fetch_mysql_data(self.mysql_client_fetcher, record_id)
-        if not task_data: 
-            print("Error fetching data from mysql. Quitting program!")
-        
-        # data = {
-        #     "id": self.id,
-        #     "model_filename": self.model_filename,
-        #     "model_content": self.model_content,
-        #     "requirements_filename": self.requirements_filename,
-        #     "requirements_content": self.requirements_content,
-        #     "upload_time": self.upload_time
-        # }
+        if self.mysql_client_fetcher:
+            task_data: dict = fetch_mysql_data(self.mysql_client_fetcher, record_id)
+            if not task_data: 
+                print("Error fetching data from mysql. Quitting program!")
+            
+            # data = {
+            #     "id": self.id,
+            #     "model_filename": self.model_filename,
+            #     "model_content": self.model_content,
+            #     "requirements_filename": self.requirements_filename,
+            #     "requirements_content": self.requirements_content,
+            #     "upload_time": self.upload_time
+            # }
 
-        create_files(task_data["requirements_content"], task_data["model_content"], self.record_id, self.task_data_path)           
+            create_files(task_data["requirements_content"], task_data["model_content"], self.record_id, self.task_data_path) 
+        else:
+            print("No mysqlclient to fetch")          
 
     def fetch_model_training_data(self):
         """Fetch training data chunk from cloud"""
