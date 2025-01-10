@@ -4,7 +4,7 @@ from rq import Queue
 from app_configure import create_app
 from app.queue import RedisQueue
 from worker.worker import execute_model
-# from worker.decorators import return_response
+from worker.decorators import return_response
 
 server: Flask = create_app()
 
@@ -26,7 +26,7 @@ server: Flask = create_app()
 
 
 @server.route("/tasks", methods=["POST"])
-# @return_response
+@return_response
 def process_task():
     data = request.get_json()          
     if not data: return jsonify({"error": "Missing data"}), 400
@@ -43,7 +43,7 @@ def process_task():
     except Exception as e:
         err_res["error"] = "Error setting queue"
         print(e)
-        return jsonify(err_res), 400
+        return err_res, 400
 
     # Push tasks in queue
     job_list = []
@@ -58,7 +58,7 @@ def process_task():
         except Exception as e:
             print(e)
             err_res["Error enqueuing tasks"]
-            return jsonify(err_res), 400
+            return err_res, 400
 
     res = {
         "message": "Task submited successfully",
@@ -66,7 +66,7 @@ def process_task():
         "job_list": job_list
     }
         
-    return jsonify(res), 200
+    return res, 200
 
 if __name__ == "__main__":
     PORT = 5002

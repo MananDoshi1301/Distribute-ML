@@ -5,5 +5,5 @@ def return_response(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         res, statuscode = func(*args, **kwargs)
-        return jsonify(res, statuscode)
+        return jsonify(res), statuscode
     return wrapper
