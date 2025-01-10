@@ -1,5 +1,6 @@
 from mysql.connector import MySQLConnection
-from models.models import Models
+from worker.models.models import Models
+# from models.models import Models
 
 def fetch_mysql_data(connection: MySQLConnection, id: str) -> dict:
     
@@ -10,11 +11,11 @@ def fetch_mysql_data(connection: MySQLConnection, id: str) -> dict:
         FROM models WHERE id = %s;
         """
         cursor.execute(query, (id,))
-        data = cursor.fetchone()
+        data = cursor.fetchone()        
         if not data: 
             print("Error in fetching data!")
-            return {}
-        model_obj = Models(data[0], data[1], data[2], data[3], data[4])        
-        return model_obj
+            return {}        
+        model_obj = Models(data[0], data[1], data[2], data[3], data[4])                
+        return model_obj.get_dict()
     except Exception as e:
         print("Some error in fetch_mysql_data function", e)
