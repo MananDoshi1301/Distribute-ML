@@ -1,8 +1,9 @@
+import boto3
 from mysql.connector import MySQLConnection
 from worker.utilities.fetch_sql_data import fetch_mysql_data
 from worker.database import MySQL_Socket
-from worker.utilities.create_files import create_files
-from worker.utilities.delete_files import delete_files
+from worker.utilities.manage_files import create_files, delete_files
+from worker.utilities.manage_venv import create_venv, remove_venv
 
 class Worker:
     def __init__(self, data_package: dict):
@@ -10,11 +11,21 @@ class Worker:
         self.mysql_client_fetcher: MySQLConnection | None = mysql_socket.client_fetcher()        
         self.data_package: dict = data_package
 
+        # File path
         self.task_data_path = "./task_data"
         self.record_id = data_package['record_id']
 
+        # setup virtual env variables
+        # self.docker_client = docker.from_env()
+        # self.s3_client = boto3.client(
+        #     's3', 
+        #     aws_access_key_id = self.__access_key_id, 
+        #     aws_secret_access_key = self.__secret_access_key
+        # )
+
     def __del__(self):
-        # delete_files(self.record_id, self.task_data_path)
+        # delete_files(self.record_id, self.task_data_path)        
+        remove_venv(self.record_id)
         ...
 
     def fetch_task_data(self):
@@ -42,6 +53,9 @@ class Worker:
         """Fetch training data chunk from cloud"""
         ...
 
+    def setup_env(self):
+        create_venv(self.record_id, self.task_data_path)
+
     def install_env_requirements(self):
         """Install environment requirements"""
         ...
@@ -67,6 +81,9 @@ def execute_model(params: dict):
     
     # fetch data
     worker.fetch_model_training_data()
+
+    # Setting virtual environment
+    worker.setup_env()
     
     # install requirements
     worker.install_env_requirements()

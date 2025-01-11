@@ -14,3 +14,12 @@ def create_files(requirement_txt: bytes, model_py: bytes, record_id: str, path: 
 
     with open(model_filename, "w") as model_file:
         model_file.write(model_py.strip())
+
+
+def delete_files(record_id: str, path: str):
+
+    req_filename = os.path.join(path, f"requirements-{record_id}.txt")
+    model_filename = os.path.join(path, f"model-{record_id}.py")
+
+    if os.path.exists(req_filename): os.remove(req_filename)
+    if os.path.exists(model_filename): os.remove(model_filename)    
