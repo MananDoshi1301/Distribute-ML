@@ -1,9 +1,10 @@
-import boto3
+import boto3, os
 from mysql.connector import MySQLConnection
 from worker.utilities.fetch_sql_data import fetch_mysql_data
 from worker.database import MySQL_Socket
 from worker.utilities.manage_files import create_files, delete_files
 from worker.utilities.manage_venv import create_venv, remove_venv
+from worker.conf.amzn_s3 import S3Config
 
 class Worker:
     def __init__(self, data_package: dict):
@@ -11,20 +12,22 @@ class Worker:
         self.mysql_client_fetcher: MySQLConnection | None = mysql_socket.client_fetcher()        
         self.data_package: dict = data_package
 
+        # Data
+        self.data_filename, self.data_fileobj = data_package['data']        
+
         # File path
         self.task_data_path = "./task_data"
         self.record_id = data_package['record_id']
 
         # setup virtual env variables
         # self.docker_client = docker.from_env()
-        # self.s3_client = boto3.client(
-        #     's3', 
-        #     aws_access_key_id = self.__access_key_id, 
-        #     aws_secret_access_key = self.__secret_access_key
-        # )
+        self.s3_object = S3Config()
+        self.s3_client: boto3.client = self.s3_object.get_client()
+        if not self.s3_client: print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ No S3 client found")
+        self.bucket_name = "paritioned-data-bucket"
 
     def __del__(self):
-        # delete_files(self.record_id, self.task_data_path)        
+        delete_files(self.record_id, self.task_data_path)        
         remove_venv(self.record_id)
         ...
 
@@ -51,10 +54,13 @@ class Worker:
 
     def fetch_model_training_data(self):
         """Fetch training data chunk from cloud"""
+        path = os.path.join(self.task_data_path, self.data_filename)
+        self.s3_client.download_file(self.bucket_name, self.data_fileobj, path)          
         ...
 
     def setup_env(self):
-        create_venv(self.record_id, self.task_data_path)
+        # create_venv(self.record_id, self.task_data_path)
+        ...
 
     def install_env_requirements(self):
         """Install environment requirements"""

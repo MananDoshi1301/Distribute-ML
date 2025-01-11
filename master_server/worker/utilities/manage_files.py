@@ -16,6 +16,12 @@ def create_files(requirement_txt: bytes, model_py: bytes, record_id: str, path: 
         model_file.write(model_py.strip())
 
 
+def download_data_chunk():
+    ...
+
+
+
+
 def delete_files(record_id: str, path: str):
 
     req_filename = os.path.join(path, f"requirements-{record_id}.txt")

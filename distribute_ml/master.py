@@ -58,9 +58,9 @@ class Master:
 
     def train(self):
         """Pushes data to cloud, model to server database and initiates training on worker"""
-        #-- Validate incoming code and data     
+        # #-- Validate incoming code and data     
          
-        #-- Push data to cloud         
+        # #-- Push data to cloud         
         # data_filename, partitions = self.task_params["MODEL_DATA"], self.task_params["TASK_PARTITION"]        
         # data_upload = CreateDataPartitions(data_filename, partitions)
         # data_upload.initiate()
@@ -78,7 +78,7 @@ class Master:
         # model_id: str = response['file_id']
         # model_name: str = response['filename']
         # #<--> Final model info --- X
-        # model_dict: dict = {"id": model_id, "filename": model_name}        
+        # # model_dict: dict = {"id": model_id, "filename": model_name}        
 
         # #-- Push requirements.txt file
         # file_id = model_id
@@ -86,11 +86,11 @@ class Master:
         # response: dict = self.__store_model_requirements(requirements_path, f'requirements/{file_id}')
         # requirements_name: str = response['filename']                        
         # #<--> Final requirements info --- X
-        # requirements_dict: dict = {"id": file_id, "filename": requirements_name}
+        # # requirements_dict: dict = {"id": file_id, "filename": requirements_name}
 
         # print("Data:", data_dict)
-        # print("Model:", model_dict)
-        # print("Requirements:", requirements_dict)
+        # # print("Model:", model_dict)
+        # # print("Requirements:", requirements_dict)
         
         # final_dict = {
         #     "data": data_dict,
@@ -98,21 +98,22 @@ class Master:
         # }
         # print("final_data:", final_dict)
 
-        final_data= {            
+        
+        final_dict = {
             'data': {
                 'filenames': [
-                    ('data_chunk_1.csv', '143e2b7b-8129-4336-8141-8a0fc1881259-data_chunk_1.csv'), 
-                    ('data_chunk_2.csv', '2c1310ed-18d2-4a01-980f-405e8765e592-data_chunk_2.csv')
+                    ('data_chunk_1.csv', '11e5719a-6e77-4e87-ab62-8739119099b3-data_chunk_1.csv'), 
+                    ('data_chunk_2.csv', '40b23c64-1d46-4b9e-bf1b-ddd4e4f89a4a-data_chunk_2.csv')
                 ], 
                 'partitions': 2
             }, 
-            'record_id': 'e4ca6707-4e80-4fbc-acdf-b607d58666e0'
+            'record_id': '937fec77-98ae-47b5-b78c-16b95bb0eb40'
         }
 
         # POST request to API server with params
         try:
             url = f"{self.env_configs.get_task_manager_server_url()}/tasks"            
-            response = requests.post(url, json=final_data)   
+            response = requests.post(url, json=final_dict)   
             print("Response from master:", response.text)         
         except Exception as e:
             print("Error submitting tasks to manager:", e)

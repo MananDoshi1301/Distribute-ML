@@ -36,12 +36,13 @@ class CreateDataPartitions:
         self.__secret_access_key: str = access_keys[1]
     
     def get_new_filename_list(self) -> list[tuple]:
-        return_list = []
-        for file in enumerate(self.new_filename_list):
+        return_list = []        
+        for file in self.new_filename_list:
             filename = file[0]
             id = file[1]
             return_list.append((os.path.basename(filename), id))
-            return return_list
+        print("Return List:", return_list)
+        return return_list
 
 
     def split_data(self) -> list[str]: 
