@@ -3,8 +3,11 @@ from mysql.connector import MySQLConnection
 from worker.utilities.fetch_sql_data import fetch_mysql_data
 from worker.database import MySQL_Socket
 from worker.utilities.manage_files import create_files, delete_files
-from worker.utilities.manage_venv import create_venv, remove_venv
+# from worker.utilities.manage_venv import create_venv, remove_venv
 from worker.conf.amzn_s3 import S3Config
+
+def print_process(header: str):
+    print(f"<{"=" * 15}\t{header}\t{"=" * 15}>")
 
 class Worker:
     def __init__(self, data_package: dict):
@@ -26,15 +29,15 @@ class Worker:
         self.s3_client: boto3.client = self.s3_object.get_client()
         if not self.s3_client: print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ No S3 client found")
         self.bucket_name = "paritioned-data-bucket"
-        self.venv_path = None
 
     def __del__(self):
         # delete_files(self.record_id, self.task_data_path)        
-        remove_venv(self.record_id)
+        # remove_venv(self.record_id)
         ...
 
     def fetch_task_data(self):
         """Fetch model, requirements from mysql db"""
+        print_process("Fetching Task Data")
         record_id: str = self.data_package['record_id']
         if self.mysql_client_fetcher:
             task_data: dict = fetch_mysql_data(self.mysql_client_fetcher, record_id)
@@ -56,16 +59,21 @@ class Worker:
 
     def fetch_model_training_data(self):
         """Fetch training data chunk from cloud"""
+        print_process("Fetching Model Training Data")
         path = os.path.join(self.task_data_path, self.data_filename)
         self.s3_client.download_file(self.bucket_name, self.data_fileobj, path)                  
 
     def setup_env(self):
-        self.venv_path = create_venv(self.record_id, self.task_data_path)            
+        print_process("Setting up the environment")
+        # self.venv_path = create_venv(self.record_id, self.task_data_path)            
+        ...
 
     def execute_model_training(self):        
-        if not self.venv_path or not os.path.isdir(self.venv_path):
-            raise ValueError(f"Invalid virtual environment path: {self.venv_path}")
+        # if not self.venv_path or not os.path.isdir(self.venv_path):
+        #     raise ValueError(f"Invalid virtual environment path: {self.venv_path}")
         
+        print_process("Beginning model training execution")
+
         # Prepare paths
         requirements_path = os.path.join(self.task_data_path, f"requirements-{self.record_id}.txt")
         model_path = os.path.join(self.task_data_path, f"model-{self.record_id}.py")
@@ -77,11 +85,18 @@ class Worker:
         container_model_path = f"{container_app_path}/model.py"
         container_data_path = f"{container_app_path}/{self.original_datafilename}"
 
-        try:                        
-
+        try:                             
+            command_list: list[str] = [
+                'ls',
+                'python -m venv /app/.venv',
+                'source /app/.venv/bin/activate',
+                f"pip install -r {container_requirements_path}",
+                f"python {container_model_path}"
+            ]
+            command = f"/bin/bash -c '{' && '.join(command_list)}'"
             container = self.docker_client.containers.run(
                 "ml-base:latest",  # Replace with your Docker image
-                command=f"/bin/bash -c 'ls && pip install -r {container_requirements_path} && python {container_model_path}'",
+                command=command,
                 volumes={
                     os.path.abspath(requirements_path): {"bind": container_requirements_path, "mode": "ro"},  # requirements.txt
                     os.path.abspath(model_path): {"bind": container_model_path, "mode": "ro"},  # model.py
@@ -94,12 +109,14 @@ class Worker:
             result = container.wait()
             logs = container.logs()
             # container.remove()
+            print_process("Model Training Completion")
         except Exception as e:
             print(f"Error while running container: {e}")
             raise
-        finally:
-            if os.path.exists(self.venv_path):
-                os.system(f"rm -rf {self.venv_path}")
+        # finally:
+        #     if os.path.exists(self.venv_path):
+        #         os.system(f"rm -rf {self.venv_path}")
+            
 
         print("*--- Result --*\n", result)
         print("*--- Logs ---*\n", logs)           
