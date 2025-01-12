@@ -69,7 +69,7 @@ class Worker:
         # Prepare paths
         requirements_path = os.path.join(self.task_data_path, f"requirements-{self.record_id}.txt")
         model_path = os.path.join(self.task_data_path, f"model-{self.record_id}.py")
-        data_path = os.path.join(self.task_data_path, self.data_fileobj)
+        data_path = os.path.join(self.task_data_path, self.data_filename)
 
         # Container paths
         container_app_path = "/app"

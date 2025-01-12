@@ -58,9 +58,9 @@ class Master:
 
     def train(self):
         """Pushes data to cloud, model to server database and initiates training on worker"""
-        # #-- Validate incoming code and data     
+        #-- Validate incoming code and data     
          
-        # #-- Push data to cloud         
+        #-- Push data to cloud         
         # data_filename, partitions = self.task_params["MODEL_DATA"], self.task_params["TASK_PARTITION"]        
         # data_upload = CreateDataPartitions(data_filename, partitions)
         # data_upload.initiate()
@@ -77,7 +77,7 @@ class Master:
         # model_path = self.task_params["MODEL_ENTRYPOINT"]            
         # response: dict = self.__store_model_requirements(model_path, 'model')
         # model_id: str = response['file_id']
-        # model_name: str = response['filename']
+        # # model_name: str = response['filename']
         # #<--> Final model info --- X
         # # model_dict: dict = {"id": model_id, "filename": model_name}        
 
@@ -97,19 +97,19 @@ class Master:
         #     "data": data_dict,
         #     "record_id": file_id                       
         # }
-        # print("final_data:", final_dict)
+        # print("final_dict:", final_dict)
 
         
         final_dict = {
             'data': {
-                'original_filename': 'data.csv',
+                'original_filename': './data.csv', 
                 'filenames': [
-                    ('data_chunk_1.csv', '11e5719a-6e77-4e87-ab62-8739119099b3-data_chunk_1.csv'), 
-                    ('data_chunk_2.csv', '40b23c64-1d46-4b9e-bf1b-ddd4e4f89a4a-data_chunk_2.csv')
+                    ('data_chunk_1.csv', '08efd064-b878-4a4d-abee-6bf21ed79621-data_chunk_1.csv'), 
+                    ('data_chunk_2.csv', '77de93cc-689f-45c9-9081-c521efb9e426-data_chunk_2.csv')
                 ], 
                 'partitions': 2
             }, 
-            'record_id': '937fec77-98ae-47b5-b78c-16b95bb0eb40'
+            'record_id': '2898d66f-2820-4920-be93-bbe8e0409f6b'
         }
 
         # POST request to API server with params
