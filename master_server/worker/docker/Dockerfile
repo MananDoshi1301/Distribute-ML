@@ -1,12 +1,16 @@
 # Base python image
-FROM python:3.13-slim
+FROM python:3.12-slim
 
 # Running base required libraries
 RUN pip install --no-cache-dir \
-    torch \
-    tensorflow \
-    scikit-learn \
     numpy \
+    scikit-learn \
+    tensorflow \
+    torch \
+    torchvision \
     boto3
+
+
+RUN  pip install --no-cache-dir mysql-connector-python
 
 WORKDIR /app

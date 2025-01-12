@@ -67,7 +67,8 @@ class Master:
         # new_names_list: list[tuple] = data_upload.get_new_filename_list()        
 
         # #<--> Final data info
-        # data_dict: dict = {            
+        # data_dict: dict = {       
+        #     "original_filename": self.task_params["MODEL_DATA"],     
         #     "filenames": new_names_list,
         #     "partitions": partitions,
         # }
@@ -101,6 +102,7 @@ class Master:
         
         final_dict = {
             'data': {
+                'original_filename': 'data.csv',
                 'filenames': [
                     ('data_chunk_1.csv', '11e5719a-6e77-4e87-ab62-8739119099b3-data_chunk_1.csv'), 
                     ('data_chunk_2.csv', '40b23c64-1d46-4b9e-bf1b-ddd4e4f89a4a-data_chunk_2.csv')

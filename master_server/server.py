@@ -15,6 +15,7 @@ server: Flask = create_app()
 
 # final_data= {
 #     'data': {
+#         "original_filename": "data.csv"
 #         'filenames': [
 #             ('data_chunk_1.csv', '143e2b7b-8129-4336-8141-8a0fc1881259-data_chunk_1.csv'), 
 #             ('data_chunk_2.csv', '2c1310ed-18d2-4a01-980f-405e8765e592-data_chunk_2.csv')
@@ -34,6 +35,7 @@ def process_task():
     err_res = {"error": ""}
 
     data_dict = data['data']
+    data_filename = data_dict["original_filename"]
     record_id = data['record_id']
 
     # Task_id
@@ -51,6 +53,7 @@ def process_task():
     for file_tuple in data_dict['filenames']:        
         data_params: dict = {
             'data': file_tuple,
+            'data_filename': data_filename,
             'record_id': record_id
         }
         try:
