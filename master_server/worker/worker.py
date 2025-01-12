@@ -88,12 +88,12 @@ class Worker:
                     os.path.abspath(data_path): {"bind": container_data_path, "mode": "ro"},  # data file
                 },
                 working_dir=container_app_path,  # Set working directory in the container
-                detach=True,
+                detach=True,                
             )
-
 
             result = container.wait()
             logs = container.logs()
+            # container.remove()
         except Exception as e:
             print(f"Error while running container: {e}")
             raise
