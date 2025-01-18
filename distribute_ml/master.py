@@ -39,7 +39,7 @@ class Master:
 
     def __store_model_requirements(self, model_path, url_path):        
         try:
-            fileserver_url = self.env_configs.get_fileserver_url()
+            fileserver_url = self.env_configs.get_fileserver_url().rstrip('/')
             url = f"{fileserver_url}/uploads/{url_path}"
             with open(model_path, 'rb') as file:
                 file_dict = {"file": file}
@@ -114,7 +114,7 @@ class Master:
 
         # POST request to API server with params
         try:
-            url = f"{self.env_configs.get_task_manager_server_url()}/tasks"            
+            url = f"{self.env_configs.get_task_manager_url().rstrip('/')}/tasks"            
             response = requests.post(url, json=final_dict)   
             print("Response from master:", response.text)         
         except Exception as e:
