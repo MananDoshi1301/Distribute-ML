@@ -2,23 +2,22 @@ from fastapi import FastAPI, UploadFile, File
 import mysql.connector, uuid, sys
 from datetime import datetime 
 import functools
+# from conf.base import DatabasePool
+from .conf.base import DatabasePool
 
 # Server init
 server = FastAPI()
 
 # DB connection
 def get_db_conn():
-    connection = mysql.connector.connect(
-        host = "localhost",
-        user = "root",
-        password = "your_new_password",
-        database = "model_files"
-    )
-
+    connection = DatabasePool.get_connnection()
     if not connection:
         print("Mysql connection is not established. Quitting!")
         sys.exit()
     return connection
+
+def close_db_conn(conn):
+    DatabasePool.release_connection(conn)
 
 # decorator
 def return_response(func):
@@ -53,7 +52,7 @@ async def upload_requirements(file_id: str, file: UploadFile = File(...)):
         return {"error": "Internal Server Error"}, 500    
     finally:
         cursor.close()
-        db.close()
+        close_db_conn(db)
 
 @server.post("/uploads/model")
 async def upload_files(file: UploadFile = File(...)):    
@@ -77,7 +76,7 @@ async def upload_files(file: UploadFile = File(...)):
         return {"error": "Model storing failed. Try again!"}, 500
     finally:
         cursor.close()
-        db.close()
+        close_db_conn(db)
     
 @server.get("/files/{file_id}")
 def get_file(file_id: str):
@@ -105,7 +104,7 @@ def get_file(file_id: str):
         return {"error": "Failed while fetching file. Try Again"}, 500
     finally:
         cursor.close()
-        db.close()
+        close_db_conn(db)
 
 @server.get("/")
 def check_health():
