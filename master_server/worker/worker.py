@@ -150,12 +150,12 @@ def execute_model(params: dict):
     worker.fetch_task_data()
     
     # fetch data
-    # worker.fetch_model_training_data()
+    worker.fetch_model_training_data()
 
     # # Setting virtual environment
-    # worker.setup_env()        
+    worker.setup_env()        
 
     # # run model.py
-    # worker.execute_model_training()
+    worker.execute_model_training()
 
     # return output    
