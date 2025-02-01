@@ -1,8 +1,9 @@
 import boto3, os, docker
-from mysql.connector import MySQLConnection
+from mysql.connector.pooling import PooledMySQLConnection
 from worker.utilities.fetch_sql_data import fetch_mysql_data
 from worker.database import MySQL_Socket
 from worker.utilities.manage_files import create_files, delete_files
+from worker.utilities.manage_training import begin_training
 # from worker.utilities.manage_venv import create_venv, remove_venv
 from worker.conf.amzn_s3 import S3Config
 
@@ -11,8 +12,8 @@ def print_process(header: str):
 
 class Worker:
     def __init__(self, data_package: dict):
-        mysql_socket = MySQL_Socket()        
-        self.mysql_client_fetcher: MySQLConnection | None = mysql_socket.client_fetcher()        
+        self.mysql_socket = MySQL_Socket()        
+        self.mysql_client_fetcher: PooledMySQLConnection = self.mysql_socket.client_fetcher()        
         self.data_package: dict = data_package
 
         # Data
@@ -33,14 +34,18 @@ class Worker:
     def __del__(self):
         # delete_files(self.record_id, self.task_data_path)        
         # remove_venv(self.record_id)
+        if isinstance(self.mysql_client_fetcher, PooledMySQLConnection):
+            self.mysql_socket.release_client(self.mysql_client_fetcher)
         ...
 
     def fetch_task_data(self):
         """Fetch model, requirements from mysql db"""
         print_process("Fetching Task Data")
         record_id: str = self.data_package['record_id']
-        if self.mysql_client_fetcher:
+        if isinstance(self.mysql_client_fetcher, PooledMySQLConnection):
+            print("<---- Client Fetcher type:", type(self.mysql_client_fetcher))
             task_data: dict = fetch_mysql_data(self.mysql_client_fetcher, record_id)
+            
             if not task_data: 
                 print("Error fetching data from mysql. Quitting program!")
             
@@ -52,7 +57,7 @@ class Worker:
             #     "requirements_content": self.requirements_content,
             #     "upload_time": self.upload_time
             # }
-
+            
             create_files(task_data["requirements_content"], task_data["model_content"], self.record_id, self.task_data_path) 
         else:
             print("No mysqlclient to fetch")          
@@ -73,51 +78,57 @@ class Worker:
         #     raise ValueError(f"Invalid virtual environment path: {self.venv_path}")
         
         print_process("Beginning model training execution")
+        
+        params = {
+            "task_data_path": self.task_data_path,
+            "record_id": self.record_id,
+            "data_filename": self.data_filename,
+            "original_datafilename": self.original_datafilename
+        }
 
-        # Prepare paths
-        requirements_path = os.path.join(self.task_data_path, f"requirements-{self.record_id}.txt")
-        model_path = os.path.join(self.task_data_path, f"model-{self.record_id}.py")
-        data_path = os.path.join(self.task_data_path, self.data_filename)
+        # # Prepare paths
+        # requirements_path = os.path.join(self.task_data_path, f"requirements-{self.record_id}.txt")
+        # model_path = os.path.join(self.task_data_path, f"model-{self.record_id}.py")
+        # data_path = os.path.join(self.task_data_path, self.data_filename)
 
-        # Container paths
-        container_app_path = "/app"
-        container_requirements_path = f"{container_app_path}/requirements.txt"
-        container_model_path = f"{container_app_path}/model.py"
-        container_data_path = f"{container_app_path}/{self.original_datafilename}"
+        # # Container paths
+        # container_app_path = "/app"
+        # container_requirements_path = f"{container_app_path}/requirements.txt"
+        # container_model_path = f"{container_app_path}/model.py"
+        # container_data_path = f"{container_app_path}/{self.original_datafilename}"
 
-        try:                             
-            command_list: list[str] = [
-                'ls',
-                'python -m venv /app/.venv',
-                'source /app/.venv/bin/activate',
-                f"pip install -r {container_requirements_path}",
-                f"python {container_model_path}"
-            ]
-            command = f"/bin/bash -c '{' && '.join(command_list)}'"
-            container = self.docker_client.containers.run(
-                "ml-base:latest",  # Replace with your Docker image
-                command=command,
-                volumes={
-                    os.path.abspath(requirements_path): {"bind": container_requirements_path, "mode": "ro"},  # requirements.txt
-                    os.path.abspath(model_path): {"bind": container_model_path, "mode": "ro"},  # model.py
-                    os.path.abspath(data_path): {"bind": container_data_path, "mode": "ro"},  # data file
-                },
-                working_dir=container_app_path,  # Set working directory in the container
-                detach=True,                
-            )
+        # try:                             
+        #     command_list: list[str] = [
+        #         'ls',
+        #         'python -m venv /app/.venv',
+        #         'source /app/.venv/bin/activate',
+        #         f"pip install -r {container_requirements_path}",
+        #         f"python {container_model_path}"
+        #     ]
+        #     command = f"/bin/bash -c '{' && '.join(command_list)}'"
+        #     container = self.docker_client.containers.run(
+        #         "ml-base:latest",  # Replace with your Docker image
+        #         command=command,
+        #         volumes={
+        #             os.path.abspath(requirements_path): {"bind": container_requirements_path, "mode": "ro"},  # requirements.txt
+        #             os.path.abspath(model_path): {"bind": container_model_path, "mode": "ro"},  # model.py
+        #             os.path.abspath(data_path): {"bind": container_data_path, "mode": "ro"},  # data file
+        #         },
+        #         working_dir=container_app_path,  # Set working directory in the container
+        #         detach=True,                
+        #     )
 
-            result = container.wait()
-            logs = container.logs()
-            # container.remove()
-            print_process("Model Training Completion")
-        except Exception as e:
-            print(f"Error while running container: {e}")
-            raise
+        #     result = container.wait()
+        #     logs = container.logs()
+        #     # container.remove()
+        #     print_process("Model Training Completion")
+        # except Exception as e:
+        #     print(f"Error while running container: {e}")
+        #     raise
         # finally:
         #     if os.path.exists(self.venv_path):
         #         os.system(f"rm -rf {self.venv_path}")
-            
-
+        result, logs = begin_training(params, self.docker_client, print_process)
         print("*--- Result --*\n", result)
         print("*--- Logs ---*\n", logs)           
     
@@ -139,12 +150,12 @@ def execute_model(params: dict):
     worker.fetch_task_data()
     
     # fetch data
-    worker.fetch_model_training_data()
+    # worker.fetch_model_training_data()
 
-    # Setting virtual environment
-    worker.setup_env()        
+    # # Setting virtual environment
+    # worker.setup_env()        
 
-    # run model.py
-    worker.execute_model_training()
+    # # run model.py
+    # worker.execute_model_training()
 
     # return output    
