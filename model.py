@@ -56,5 +56,8 @@ class PhishingURLModel:
 
 if __name__ == "__main__":
     # Replace 'data.csv' with the actual dataset path
+    print("Starting ml process...")
     model = PhishingURLModel(data_path="data.csv")
+    print("Starting model execution...")
     model.train()
+    print("Model execution complete!")

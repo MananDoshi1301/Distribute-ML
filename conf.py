@@ -1,4 +1,6 @@
 from distribute_ml.master import Master
+# from torch.nn import optim
+from torch import optim
 
 class DistributionConfig:
     # required
@@ -15,3 +17,12 @@ class DistributionConfig:
     
     # required
     TASK_OUTPUT = "weight"
+
+    # required
+    OPTIMIZER = optim.SGD
+    
+    # required
+    OPTIMIZER_PARAMS = {
+        "lr": 0.01,
+        "momentum": 0.9
+    }

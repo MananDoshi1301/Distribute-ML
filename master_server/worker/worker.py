@@ -3,7 +3,7 @@ from mysql.connector.pooling import PooledMySQLConnection
 from worker.utilities.fetch_sql_data import fetch_mysql_data
 from worker.database import MySQL_Socket
 from worker.utilities.manage_files import create_files, delete_files
-from worker.utilities.manage_training import begin_training
+import worker.utilities.manage_training as worker_training
 # from worker.utilities.manage_venv import create_venv, remove_venv
 from worker.conf.amzn_s3 import S3Config
 
@@ -85,52 +85,10 @@ class Worker:
             "data_filename": self.data_filename,
             "original_datafilename": self.original_datafilename
         }
-
-        # # Prepare paths
-        # requirements_path = os.path.join(self.task_data_path, f"requirements-{self.record_id}.txt")
-        # model_path = os.path.join(self.task_data_path, f"model-{self.record_id}.py")
-        # data_path = os.path.join(self.task_data_path, self.data_filename)
-
-        # # Container paths
-        # container_app_path = "/app"
-        # container_requirements_path = f"{container_app_path}/requirements.txt"
-        # container_model_path = f"{container_app_path}/model.py"
-        # container_data_path = f"{container_app_path}/{self.original_datafilename}"
-
-        # try:                             
-        #     command_list: list[str] = [
-        #         'ls',
-        #         'python -m venv /app/.venv',
-        #         'source /app/.venv/bin/activate',
-        #         f"pip install -r {container_requirements_path}",
-        #         f"python {container_model_path}"
-        #     ]
-        #     command = f"/bin/bash -c '{' && '.join(command_list)}'"
-        #     container = self.docker_client.containers.run(
-        #         "ml-base:latest",  # Replace with your Docker image
-        #         command=command,
-        #         volumes={
-        #             os.path.abspath(requirements_path): {"bind": container_requirements_path, "mode": "ro"},  # requirements.txt
-        #             os.path.abspath(model_path): {"bind": container_model_path, "mode": "ro"},  # model.py
-        #             os.path.abspath(data_path): {"bind": container_data_path, "mode": "ro"},  # data file
-        #         },
-        #         working_dir=container_app_path,  # Set working directory in the container
-        #         detach=True,                
-        #     )
-
-        #     result = container.wait()
-        #     logs = container.logs()
-        #     # container.remove()
-        #     print_process("Model Training Completion")
-        # except Exception as e:
-        #     print(f"Error while running container: {e}")
-        #     raise
-        # finally:
-        #     if os.path.exists(self.venv_path):
-        #         os.system(f"rm -rf {self.venv_path}")
-        result, logs = begin_training(params, self.docker_client, print_process)
-        print("*--- Result --*\n", result)
-        print("*--- Logs ---*\n", logs)           
+                
+        result, logs = worker_training.begin_training(params, self.docker_client, print_process)
+        # print("*--- Result --*\n", result)
+        # print("*--- Logs ---*\n", logs)           
     
 
 def execute_model(params: dict):
