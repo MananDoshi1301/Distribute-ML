@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir \
     boto3
 
 
-RUN  pip install --no-cache-dir mysql-connector-python
+RUN  pip install --no-cache-dir mysql-connector-python \
+&& pip list
 
 WORKDIR /app

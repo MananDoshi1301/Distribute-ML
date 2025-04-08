@@ -1,63 +1,87 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import os, uuid
+import json
+import argparse
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
-# import joblib
+from sklearn.preprocessing import StandardScaler
 
+class LogisticRegressionModel(nn.Module):
+    def __init__(self, input_dim):
+        super().__init__()
+        self.linear = nn.Linear(input_dim, 1)
 
-class PhishingURLModel:
-    def __init__(self, data_path="data.csv", model_path="phishing_model.pkl"):
-        self.data_path = data_path
-        self.model_path = model_path
-        self.model = RandomForestClassifier(n_estimators=100, random_state=42)
-    
-    def load_data(self):
-        """Load and preprocess the data."""
-        print("Loading data...")
-        df = pd.read_csv(self.data_path)
-        if "label_encoded" not in df.columns:
-            raise ValueError("Dataset must have a 'label_encoded' column.")
-        
-        X = df.drop(columns=["label_encoded"])
-        y = df["label_encoded"]
-        return train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    def train(self):
-        """Train the model on the dataset."""
-        print("Training model...")
-        X_train, X_test, y_train, y_test = self.load_data()
-        self.model.fit(X_train, y_train)
-        
-        # Evaluate the model
-        predictions = self.model.predict(X_test)
-        print(f"Accuracy: {accuracy_score(y_test, predictions):.2f}")
-        print("Classification Report:")
-        print(classification_report(y_test, predictions))
-        
-        # Save the model
-        # self.save_model()
-    
-    # def save_model(self):
-    #     """Save the trained model to disk."""
-    #     print(f"Saving model to {self.model_path}...")
-    #     joblib.dump(self.model, self.model_path)
-    
-    # def load_model(self):
-    #     """Load the saved model."""
-    #     print(f"Loading model from {self.model_path}...")
-    #     self.model = joblib.load(self.model_path)
-    
-    # def predict(self, features):
-    #     """Predict using the trained model."""
-    #     if not self.model:
-    #         raise ValueError("Model not loaded. Call `load_model` first.")
-    #     return self.model.predict(features)
+    def forward(self, x):
+        return torch.sigmoid(self.linear(x))
 
+# Worker
+def compute_gradients(model, data, target, output_path="/app/results/grads.json", worker_id=uuid.uuid4()):
+    criterion = nn.BCELoss()
+    output = model(data)
+    loss = criterion(output, target)
+    loss.backward()
+
+    # grads_dict = {
+    #     name: param.grad.detach().cpu().numpy().tolist()
+    #     for name, param in model.named_parameters()
+    #     if param.grad is not None
+    # }
+
+    # grads_dict = {}
+    # for name, param in model.named_parameters():
+    #     if "weight" in name:
+    #         grads_dict["weight"] = param.grad.detach().cpu().numpy().tolist()
+    #     elif "bias" in name:
+    #         grads_dict["bias"] = param.grad.detach().cpu().numpy().tolist()
+
+    grads_list = []
+    for name, param in model.named_parameters():
+        if param.grad is not None:
+            layer, param_type = name.split(".")  # 'linear.weight' → 'linear', 'weight'
+            grads_list.append({
+                "layer": layer,
+                "type": param_type,
+                "values": param.grad.detach().cpu().numpy().tolist()
+            })
+
+    # results_path = os.path.join(results_dir, f"res-{id}.json")
+    # os.makedirs(results_dir, exist_ok=True)
+    # with open(results_path, 'w') as f:
+    #     results_data = {
+    #         'logs': logs.decode('utf-8'),
+    #         'result': result
+    #     }
+    #     json.dump(results_data, f)
+
+    results_dir = output_path
+    results_path = os.path.join(results_dir, f"res-{worker_id}.json")
+    os.makedirs(results_dir, exist_ok=True)
+
+    # os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(results_path, 'w') as f:
+        json.dump(grads_list, f)
+
+    return grads_list
 
 if __name__ == "__main__":
-    # Replace 'data.csv' with the actual dataset path
-    print("Starting ml process...")
-    model = PhishingURLModel(data_path="data.csv")
-    print("Starting model execution...")
-    model.train()
-    print("Model execution complete!")
+    parser = argparse.ArgumentParser()    
+    parser.add_argument("--output_path", type=str, default="/app/results/grads.json")
+    parser.add_argument("--worker_id", type=str, default=uuid.uuid4())
+    args = parser.parse_args()
+
+    # Load CSV data
+    df = pd.read_csv("data.csv")
+    X = df.drop(columns=["label_encoded"]).values
+    y = df["label_encoded"].values.reshape(-1, 1)
+
+    # Normalize
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
+
+    # Convert to tensors
+    X_tensor = torch.tensor(X, dtype=torch.float32)
+    y_tensor = torch.tensor(y, dtype=torch.float32)
+
+    model = LogisticRegressionModel(input_dim=X.shape[1])
+    compute_gradients(model, X_tensor, y_tensor, output_path=args.output_path, worker_id = args.worker_id)

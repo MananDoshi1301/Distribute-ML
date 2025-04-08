@@ -51,22 +51,25 @@ def process_task():
     # Push tasks in queue
     job_list = []
     for file_tuple in data_dict['filenames']:        
+        worker_id = uuid.uuid4()
         data_params: dict = {
-            'data': file_tuple,
-            'data_filename': data_filename,
-            'record_id': record_id
+            "data": file_tuple,
+            "data_filename": data_filename,
+            "record_id": record_id,
+            "task_id": task_id,
+            "worker_id": worker_id
         }
         try:
             job = rq_client.enqueue(execute_model, data_params)
-            job_list.append(str(job.id))
+            job_list.append(str(worker_id))
         except Exception as e:
             print(e)
             err_res["Error enqueuing tasks"]
             return err_res, 400
 
     res = {
-        "message": "Task submited successfully",
-        "task_id": task_id,
+        "message": "Task submited successfully",        
+        "record_id": record_id,
         "job_list": job_list
     }
         

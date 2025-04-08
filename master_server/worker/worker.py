@@ -12,17 +12,19 @@ def print_process(header: str):
 
 class Worker:
     def __init__(self, data_package: dict):
+        self.worker_id = data_package["worker_id"]    
         self.mysql_socket = MySQL_Socket()        
         self.mysql_client_fetcher: PooledMySQLConnection = self.mysql_socket.client_fetcher()        
         self.data_package: dict = data_package
 
         # Data
         self.data_filename, self.data_fileobj = data_package['data']   
-        self.original_datafilename = data_package["data_filename"]             
+        self.original_datafilename = data_package["data_filename"]         
 
         # File path
         self.task_data_path = "./task_data"
         self.record_id = data_package['record_id']
+        self.task_id = data_package['task_id'] 
 
         # setup virtual env variables
         self.docker_client = docker.from_env()
@@ -82,8 +84,10 @@ class Worker:
         params = {
             "task_data_path": self.task_data_path,
             "record_id": self.record_id,
+            "task_id": self.task_id,
             "data_filename": self.data_filename,
-            "original_datafilename": self.original_datafilename
+            "original_datafilename": self.original_datafilename,
+            "worker_id": self.worker_id
         }
                 
         result, logs = worker_training.begin_training(params, self.docker_client, print_process)
@@ -99,6 +103,7 @@ def execute_model(params: dict):
     #     'data': ('data_chunk_1.csv', '143e2b7b-8129-4336-8141-8a0fc1881259-data_chunk_1.csv'), 
     #     "data_filename": "data.csv"
     #     'record_id': 'e4ca6707-4e80-4fbc-acdf-b607d58666e0'
+    #     "task_id": "fb86cac4-0ea4-44e5-9fdd-934605a0bb73"
     # }    
 
     # Initialize a worker

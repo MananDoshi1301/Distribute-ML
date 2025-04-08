@@ -1,9 +1,6 @@
-import sys
 from .app.utilities.upload_data import CreateDataPartitions
 from .conf.base import BaseConfig
-import requests
-import json
-import uuid
+import requests, json, sys
 from typing import Dict
 
 
@@ -100,7 +97,12 @@ class Master:
 
     def train(self):
         """Pushes data to cloud, model to server database and initiates training on worker"""
-        execute_all = False
+
+        final_dict = {
+            'data': {'original_filename': './data.csv', 'filenames': [('data_chunk_1.csv', '49248c10-249e-4dfc-9911-8e7038d290d4-data_chunk_1.csv'), (
+                'data_chunk_2.csv', 'd593839a-d207-48b1-a603-df0ca50bb67e-data_chunk_2.csv')], 'partitions': 2}, 'record_id': '26ca4c5b-f605-429f-b5a6-159cfffb6062'}
+        
+        execute_all = True
 
         if execute_all:
             # -- Validate incoming code and data
@@ -120,18 +122,7 @@ class Master:
                 "record_id": file_id
             }
             print("\nfinal_dict =", final_dict)
-            print()
-
-        final_dict = {
-            'data': {
-                'original_filename': './data.csv', 
-                'filenames': [
-                    ('data_chunk_1.csv', '2f82ed00-73fe-4821-8bf9-11903fd5fcdb-data_chunk_1.csv'), ('data_chunk_2.csv', '46843288-3409-41aa-890f-78d3c76a68fd-data_chunk_2.csv')
-                ], 
-                'partitions': 2
-            }, 
-            'record_id': '0fd8012e-90cf-4841-9b3d-b174bf18a259'
-        }
+            print()        
 
         # POST request to API server with params
         try:
