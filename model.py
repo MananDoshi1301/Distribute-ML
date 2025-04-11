@@ -16,7 +16,7 @@ class LogisticRegressionModel(nn.Module):
         return torch.sigmoid(self.linear(x))
 
 # Worker
-def compute_gradients(model, data, target, output_path="/app/results/grads.json", worker_id=uuid.uuid4()):
+def compute_gradients(model, data, target, output_path="/app/results/grads.json", worker_id=uuid.uuid4(), result_filename = f"res-random-{uuid.uuid4()}.json"):
     criterion = nn.BCELoss()
     output = model(data)
     loss = criterion(output, target)
@@ -55,7 +55,7 @@ def compute_gradients(model, data, target, output_path="/app/results/grads.json"
     #     json.dump(results_data, f)
 
     results_dir = output_path
-    results_path = os.path.join(results_dir, f"res-{worker_id}.json")
+    results_path = os.path.join(results_dir, result_filename)
     os.makedirs(results_dir, exist_ok=True)
 
     # os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -68,6 +68,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()    
     parser.add_argument("--output_path", type=str, default="/app/results/grads.json")
     parser.add_argument("--worker_id", type=str, default=uuid.uuid4())
+    parser.add_argument("--result_filename", type=str, default=f"res-random-{uuid.uuid4()}.json")
     args = parser.parse_args()
 
     # Load CSV data
@@ -84,4 +85,4 @@ if __name__ == "__main__":
     y_tensor = torch.tensor(y, dtype=torch.float32)
 
     model = LogisticRegressionModel(input_dim=X.shape[1])
-    compute_gradients(model, X_tensor, y_tensor, output_path=args.output_path, worker_id = args.worker_id)
+    compute_gradients(model, X_tensor, y_tensor, output_path=args.output_path, worker_id = args.worker_id, result_filename = args.result_filename)

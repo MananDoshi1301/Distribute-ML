@@ -17,11 +17,11 @@ server: Flask = create_app()
 #     'data': {
 #         "original_filename": "data.csv"
 #         'filenames': [
-#             ('data_chunk_1.csv', '143e2b7b-8129-4336-8141-8a0fc1881259-data_chunk_1.csv'), 
+#             ('data_chunk_1.csv', '143e2b7b-8129-4336-8141-8a0fc1881259-data_chunk_1.csv'),
 #             ('data_chunk_2.csv', '2c1310ed-18d2-4a01-980f-405e8765e592-data_chunk_2.csv')
-#         ], 
+#         ],
 #         'partitions': 2
-#     }, 
+#     },
 #     'record_id': 'e4ca6707-4e80-4fbc-acdf-b607d58666e0'
 # }
 
@@ -29,8 +29,9 @@ server: Flask = create_app()
 @server.route("/tasks", methods=["POST"])
 @return_response
 def process_task():
-    data = request.get_json()          
-    if not data: return jsonify({"error": "Missing data"}), 400
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Missing data"}), 400
 
     err_res = {"error": ""}
 
@@ -40,9 +41,10 @@ def process_task():
 
     # Task_id
     task_id = str(uuid.uuid4())
-    
+
     #  Getting client
-    try: rq_client: Queue = RedisQueue().get_training_queue()
+    try:
+        rq_client: Queue = RedisQueue().get_training_queue()
     except Exception as e:
         err_res["error"] = "Error setting queue"
         print(e)
@@ -50,7 +52,7 @@ def process_task():
 
     # Push tasks in queue
     job_list = []
-    for file_tuple in data_dict['filenames']:        
+    for file_tuple in data_dict['filenames']:
         worker_id = uuid.uuid4()
         data_params: dict = {
             "data": file_tuple,
@@ -68,12 +70,35 @@ def process_task():
             return err_res, 400
 
     res = {
-        "message": "Task submited successfully",        
+        "message": "Task submited successfully",
         "record_id": record_id,
         "job_list": job_list
     }
-        
+
     return res, 200
+
+
+@server.route("/optimize", methods=["POST"])
+@return_response
+def optimize_gradient():
+    data = request.get_json()
+    if not data:
+        return {"error": "Missing data"}, 400
+    
+    # {
+    #     'data': ['data_chunk_2.csv', '95293ee7-70c9-4449-8197-471cfbfcd323-data_chunk_2.csv'], 
+    #     'data_filename': './data.csv', 
+    #     'record_id': '44a3d781-8949-4364-88b8-160e7b1fbae0', 
+    #     'task_id': '547fb1b4-421b-4e2b-87aa-70089e2e39b8',
+    #     'worker_id': '0eb81264-3adc-4d75-89ac-41617fee789a', 
+    #     'results': {
+    #         'dir': './task_data/results-44a3d781-8949-4364-88b8-160e7b1fbae0', 
+    #         'filenames': 'res-0eb81264-3adc-4d75-89ac-41617fee789a.json', 
+    #         'iteration': 1
+    #     }
+    # }
+    
+    return {"data": data}, 200
 
 if __name__ == "__main__":
     PORT = 5002

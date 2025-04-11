@@ -1,4 +1,4 @@
-import os, json, uuid
+import os
 
 def begin_training(params: dict, docker_client, print_process):
     
@@ -15,6 +15,7 @@ def begin_training(params: dict, docker_client, print_process):
     results_dir = os.path.join(task_data_path, f"results-{record_id}")        
     # output_json_host_path = os.path.join(results_dir, f"res-{record_id}-{uuid.uuid4()}.json")
     output_json_host_path = os.path.join(results_dir)
+    result_filename = f"res-{worker_id}.json"
 
     # Container paths
     container_app_path = "/app"
@@ -34,7 +35,7 @@ def begin_training(params: dict, docker_client, print_process):
             # 'source /app/.venv/bin/activate',
             f"pip install -r {container_requirements_path} > /dev/null 2>&1",
             # f"python {container_model_path}"
-            f"python {container_model_path} --output_path {container_results_path}"
+            f"python {container_model_path} --output_path {container_results_path} --worker_id {worker_id} --result_filename {result_filename}"
         ]
         command = f"/bin/bash -c '{' && '.join(command_list)}'"
         container = docker_client.containers.run(
@@ -63,7 +64,7 @@ def begin_training(params: dict, docker_client, print_process):
         #     json.dump(results_data, f)
         # container.remove()
         print_process("Model Training Completion")
-        return result, logs
+        return result, logs, output_json_host_path, result_filename
     except Exception as e:
         print(f"Error while running container: {e}")
         raise

@@ -99,8 +99,16 @@ class Master:
         """Pushes data to cloud, model to server database and initiates training on worker"""
 
         final_dict = {
-            'data': {'original_filename': './data.csv', 'filenames': [('data_chunk_1.csv', '49248c10-249e-4dfc-9911-8e7038d290d4-data_chunk_1.csv'), (
-                'data_chunk_2.csv', 'd593839a-d207-48b1-a603-df0ca50bb67e-data_chunk_2.csv')], 'partitions': 2}, 'record_id': '26ca4c5b-f605-429f-b5a6-159cfffb6062'}
+            'data': {
+                'original_filename': './data.csv', 
+                'filenames': [
+                    ('data_chunk_1.csv', '49248c10-249e-4dfc-9911-8e7038d290d4-data_chunk_1.csv'), 
+                    ('data_chunk_2.csv', 'd593839a-d207-48b1-a603-df0ca50bb67e-data_chunk_2.csv')
+                ], 
+                'partitions': 2
+            }, 
+            'record_id': '26ca4c5b-f605-429f-b5a6-159cfffb6062'
+        }
         
         execute_all = True
 
