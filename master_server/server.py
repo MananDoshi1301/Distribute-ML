@@ -3,8 +3,10 @@ from flask import Flask, request, jsonify
 from rq import Queue
 from app_configure import create_app
 from app.queue import RedisQueue
+from app.optimizer import run_optimizer
 from worker.worker import execute_model
 from worker.decorators import return_response
+from app.sql_job_manager import record_job, worker_task_complete
 
 server: Flask = create_app()
 
@@ -69,6 +71,17 @@ def process_task():
             err_res["Error enqueuing tasks"]
             return err_res, 400
 
+    # SQL record for the task beginning
+    sql_record_params = {
+        "record_id": record_id,
+        "task_id": task_id,
+        "num_partitions": data_dict["partitions"],
+        "expected_workers": data_dict["partitions"],
+        "completed_workers": 0,
+        "status": "in_progress"
+    }
+    record_job(sql_record_params)
+
     res = {
         "message": "Task submited successfully",
         "record_id": record_id,
@@ -97,8 +110,14 @@ def optimize_gradient():
     #         'iteration': 1
     #     }
     # }
-    
-    return {"data": data}, 200
+    record_id = data["record_id"]
+    response = worker_task_complete(record_id=record_id)
+
+    if response["task_completion"] == False:    
+        return {"data": data}, 200
+    else:
+        run_optimizer()
+        return {"data": data}, 200
 
 if __name__ == "__main__":
     PORT = 5002
