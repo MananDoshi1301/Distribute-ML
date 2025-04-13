@@ -103,3 +103,36 @@ def worker_task_complete(record_id: str):
         connection.close()
         print("Some error", e)
         raise     
+
+
+def get_optimizer_data(record_id):    
+    
+
+    mysql_socket = MySQL_Socket()
+    connection: PooledMySQLConnection = mysql_socket.connection(db_name="model_training")
+    try:
+        if not isinstance(connection, PooledMySQLConnection):
+            raise ValueError(f"Invalid connection object: {type(connection)}")
+                
+        cursor = connection.cursor()
+        if not cursor: print("Cursor not found for posting mysql results")
+        print("Cursor recieved!")
+
+        query = """
+        SELECT results_content
+        FROM training_records
+        WHERE record_id = %s
+        """
+        query_param = (record_id,)
+        cursor.execute(query, query_param)
+        data = cursor.fetchall()                   
+        processed_data = []
+        for tup in data:
+            processed_data.append(tup[0])    
+        
+        connection.close()
+        return {"message": "Optimizer data fetched successfully!", "data": processed_data}
+    except Exception as e:            
+        connection.close()         
+        print("Some error", e)
+        raise                 

@@ -98,26 +98,32 @@ def optimize_gradient():
     if not data:
         return {"error": "Missing data"}, 400
     
-    # {
-    #     'data': ['data_chunk_2.csv', '95293ee7-70c9-4449-8197-471cfbfcd323-data_chunk_2.csv'], 
-    #     'data_filename': './data.csv', 
-    #     'record_id': '44a3d781-8949-4364-88b8-160e7b1fbae0', 
-    #     'task_id': '547fb1b4-421b-4e2b-87aa-70089e2e39b8',
-    #     'worker_id': '0eb81264-3adc-4d75-89ac-41617fee789a', 
-    #     'results': {
-    #         'dir': './task_data/results-44a3d781-8949-4364-88b8-160e7b1fbae0', 
-    #         'filenames': 'res-0eb81264-3adc-4d75-89ac-41617fee789a.json', 
-    #         'iteration': 1
-    #     }
-    # }
+    """
+    {
+        'data': ['data_chunk_2.csv', '95293ee7-70c9-4449-8197-471cfbfcd323-data_chunk_2.csv'], 
+        'data_filename': './data.csv', 
+        'record_id': '44a3d781-8949-4364-88b8-160e7b1fbae0', 
+        'task_id': '547fb1b4-421b-4e2b-87aa-70089e2e39b8',
+        'worker_id': '0eb81264-3adc-4d75-89ac-41617fee789a', 
+        'results': {
+            'dir': './task_data/results-44a3d781-8949-4364-88b8-160e7b1fbae0', 
+            'filenames': 'res-0eb81264-3adc-4d75-89ac-41617fee789a.json', 
+            'iteration': 1
+        }
+    }
+    """
     record_id = data["record_id"]
     response = worker_task_complete(record_id=record_id)
 
     if response["task_completion"] == False:    
         return {"data": data}, 200
     else:
-        run_optimizer()
-        return {"data": data}, 200
+        package = {
+            "record_id": record_id
+        }
+        print("Running Optimizer...!")
+        run_optimizer(data_package=package)
+    return {"data": data}, 200
 
 if __name__ == "__main__":
     PORT = 5002
