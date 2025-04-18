@@ -160,9 +160,7 @@ class Master:
             # -- Push params, learning_rate, momentum
             print_process("Pushing params to cloud begins...")
             self.__push_model_params(file_id=file_id)
-            print_process("Pushing params to cloud ends!")
-
-            print("Data:", data_dict)
+            print_process("Pushing params to cloud ends!")            
 
             final_dict = {
                 "data": data_dict,
