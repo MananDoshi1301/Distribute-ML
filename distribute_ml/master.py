@@ -7,6 +7,8 @@ from typing import Dict
 def hello():
     print("Hello From module!")
 
+def print_process(text: str):
+    print(f"<{'-' * 8}\t{text}\t{'-' * 8}>")    
 
 class Master:
     def __init__(self):
@@ -59,6 +61,32 @@ class Master:
         except Exception as e:
             print("Error in library", e)
             sys.exit()
+
+    def __push_model_params(self, file_id: str):
+        try:
+            fileserver_url = self.env_configs.get_fileserver_url().rstrip('/')
+            learning_rate = self.task_params["OPTIMIZER_PARAMS"]["lr"]
+            momentum = self.task_params["OPTIMIZER_PARAMS"]["momentum"]
+            init_params = self.task_params["INITIAL_PARAMS"]
+            json_data = {
+                "learning_rate": learning_rate,
+                "momentum": momentum,
+                "initial_params": init_params
+            }
+            url = f"{fileserver_url}/uploads/params/{file_id}"
+            data: requests = requests.post(url, json=json_data)
+            
+            data: list = json.loads(data.text)
+            response: dict = data[0]
+            if 'error' in response:
+                print("Error while storing model. Quitting the program")
+                sys.exit()
+
+            return response
+        except Exception as e:
+            print("Error in library", e)
+            sys.exit()
+        ...
 
     def __push_env_requirements(self, model_id):
         # -- Push requirements.txt file
@@ -114,14 +142,25 @@ class Master:
 
         if execute_all:
             # -- Validate incoming code and data
+            print_process("Pushing data to cloud begins...")
             data_dict: Dict[str] = self.__push_data_to_cloud()
+            print_process("Pushing data to cloud completes!")
 
             # -- Push model to database == POST request to file_transfer_app
+            print_process("Pushing model to cloud begins...")
             model_id: str = self.__push_model_to_cloud()
+            print_process("Pushing model to cloud ends!")
 
             # -- Push requirements.txt file
             file_id = model_id
-            self.__push_env_requirements(model_id)
+            print_process("Pushing requirements to cloud begins...")
+            self.__push_env_requirements(model_id=model_id)
+            print_process("Pushing requirements to cloud ends!")
+
+            # -- Push params, learning_rate, momentum
+            print_process("Pushing params to cloud begins...")
+            self.__push_model_params(file_id=file_id)
+            print_process("Pushing params to cloud ends!")
 
             print("Data:", data_dict)
 
@@ -134,10 +173,15 @@ class Master:
 
         # POST request to API server with params
         try:
-            url = f"{self.env_configs.get_task_manager_url().rstrip('/')}/tasks"
+            url = f"{self.env_configs.get_task_manager_url().rstrip('/')}/tasks"            
+            print_process("Running jobs on workers begin...")
             response = requests.post(url, json=final_dict)
-            print("Response from master:", response.text)
+            print("Response from master:", response.text)            
         except Exception as e:
             print("Error submitting tasks to manager:", e)
 
         # -----------------------------------------------
+
+
+if __name__ == "__main__":
+    ...

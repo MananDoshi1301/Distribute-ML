@@ -4,6 +4,8 @@ from datetime import datetime
 import functools
 # from conf.base import DatabasePool
 from .conf.base import DatabasePool
+from typing import Dict, Any
+import json
 
 # Server init
 server = FastAPI()
@@ -53,6 +55,33 @@ async def upload_requirements(file_id: str, file: UploadFile = File(...)):
     finally:
         cursor.close()
         close_db_conn(db)
+
+@server.post("/uploads/params/{file_id}")
+def upload_params(file_id: str, params: Dict[str, Any]):    
+    try:
+        db = get_db_conn()
+        cursor = db.cursor(dictionary=True)
+        query = """
+        UPDATE models
+        SET learning_rate = %s,
+        momentum = %s, initial_params = %s
+        WHERE id = %s;        
+        """
+        learning_rate = params["learning_rate"]
+        momentum = params["momentum"]
+        initial_params = json.dumps(params["initial_params"])
+        db.start_transaction()
+        cursor.execute(query, (learning_rate, momentum, initial_params, file_id))
+        db.commit()
+        return {"message": "Params inserted succesfully!", "filename": file_id}, 200
+    except Exception as e:
+        db.rollback()
+        print(e)
+        return {"error": "Internal Server Error"}, 500    
+    finally:
+        cursor.close()
+        close_db_conn(db)    
+
 
 @server.post("/uploads/model")
 async def upload_files(file: UploadFile = File(...)):    
