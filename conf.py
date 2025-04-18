@@ -26,3 +26,11 @@ class DistributionConfig:
         "lr": 0.01,
         "momentum": 0.9
     }
+    
+    # required
+    INITIAL_PARAMS = {
+        "linear": {
+            "weight": [[0.0 for _ in range(8)]],  
+            "bias": [0.0]
+        }
+    }

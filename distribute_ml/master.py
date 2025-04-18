@@ -16,11 +16,11 @@ class Master:
     def set_config(self, config_cls: type):
         """Configures parameters for the framework"""
         required_params = ["MODEL_ENTRYPOINT", "MODEL_DATA",
-                           "TASK_OUTPUT", "OPTIMIZER", "OPTIMIZER_PARAMS"]
+                           "TASK_OUTPUT", "OPTIMIZER", "OPTIMIZER_PARAMS", "INITIAL_PARAMS"]
         final_params = {
             "MODEL_ENTRYPOINT": "", "MODEL_DATA": "", "TASK_OUTPUT": "",
             "MODEL_REQUIREMENTS": "requirements.txt", "TASK_PARTITION": 10,
-            "OPTIMIZER": None, "OPTIMIZER_PARAMS": None
+            "OPTIMIZER": None, "OPTIMIZER_PARAMS": None, "INITIAL_PARAMS": None
         }
 
         all_configs = {k: v for k, v in vars(config_cls).items()}
