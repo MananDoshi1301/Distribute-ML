@@ -104,7 +104,6 @@ def worker_task_complete(record_id: str):
         print("Some error", e)
         raise     
 
-
 def get_optimizer_data(record_id):    
     
 
@@ -148,3 +147,85 @@ def get_optimizer_data(record_id):
 
         (b'[{"layer": "linear", "type": "weight", "values": [[-0.03884708508849144, 0.013743504881858826, -0.11262378841638565, 0.022557340562343597, 0.04209470376372337, -0.010569879785180092, -0.06886139512062073, -0.08061739057302475]]}, {"layer": "linear", "type": "bias", "values": [0.101676344871521]}]',)
     ]
+
+def update_training_state(record_id):
+    mysql_socket = MySQL_Socket()
+    connection: PooledMySQLConnection = mysql_socket.connection(db_name="model_training")
+    try:
+        if not isinstance(connection, PooledMySQLConnection):
+            raise ValueError(f"Invalid connection object: {type(connection)}")
+                
+        cursor = connection.cursor()
+        if not cursor: print("Cursor not found for posting mysql results")
+        print("Cursor recieved!")
+        update_query = """
+        UPDATE master_training_records
+        SET status = %s
+        WHERE record_id = %s
+        """
+        connection.start_transaction()
+        query_params = ("optimizing", record_id)
+        cursor.execute(update_query, query_params)   
+        connection.commit()
+        connection.close()
+
+    except Exception as e:
+        connection.rollback()                
+        connection.close()
+        print("Some error on updating state:", e)
+        raise     
+
+def save_new_params(record_id: str, params: dict):
+    """Update model_files with this new weights"""
+    mysql_socket = MySQL_Socket()
+    connection: PooledMySQLConnection = mysql_socket.connection(db_name="model_files")
+    try:
+        if not isinstance(connection, PooledMySQLConnection):
+            raise ValueError(f"Invalid connection object: {type(connection)}")
+                
+        cursor = connection.cursor()
+        if not cursor: print("Cursor not found for posting mysql results")
+        print("Cursor recieved!")
+        update_query = """
+        UPDATE models
+        SET initial_params = %s
+        WHERE id = %s
+        """
+        connection.start_transaction()
+        query_params = (json.dumps(params), record_id)
+        cursor.execute(update_query, query_params)   
+        connection.commit()
+        connection.close()
+
+    except Exception as e:
+        connection.rollback()                
+        connection.close()
+        print("Some error on updating state:", e)
+        raise    
+
+def delete_old_transaction_records(record_id: str):
+    """Delete all transactions from training_records for a certain record_id;"""
+    mysql_socket = MySQL_Socket()
+    del_connection: PooledMySQLConnection = mysql_socket.connection(db_name="model_training")
+    try:
+        if not isinstance(del_connection, PooledMySQLConnection):
+            raise ValueError(f"Invalid connection object: {type(del_connection)}")
+                
+        cursor = del_connection.cursor()
+        if not cursor: print("Cursor not found for posting mysql results")
+        print("Cursor recieved!")
+        update_query = """
+        DELETE FROM model_training.training_records
+        WHERE record_id = %s
+        """
+        del_connection.start_transaction()
+        query_params = (record_id,)
+        cursor.execute(update_query, query_params)   
+        del_connection.commit()
+        del_connection.close()        
+
+    except Exception as e:
+        del_connection.rollback()                
+        del_connection.close()
+        print("Some error on updating state:", e)
+        raise        
