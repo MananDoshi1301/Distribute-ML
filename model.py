@@ -20,20 +20,7 @@ def compute_gradients(model, data, target, output_path="/app/results/grads.json"
     criterion = nn.BCELoss()
     output = model(data)
     loss = criterion(output, target)
-    loss.backward()
-
-    # grads_dict = {
-    #     name: param.grad.detach().cpu().numpy().tolist()
-    #     for name, param in model.named_parameters()
-    #     if param.grad is not None
-    # }
-
-    # grads_dict = {}
-    # for name, param in model.named_parameters():
-    #     if "weight" in name:
-    #         grads_dict["weight"] = param.grad.detach().cpu().numpy().tolist()
-    #     elif "bias" in name:
-    #         grads_dict["bias"] = param.grad.detach().cpu().numpy().tolist()
+    loss.backward()    
 
     grads_list = []
     for name, param in model.named_parameters():
@@ -45,20 +32,12 @@ def compute_gradients(model, data, target, output_path="/app/results/grads.json"
                 "values": param.grad.detach().cpu().numpy().tolist()
             })
 
-    # results_path = os.path.join(results_dir, f"res-{id}.json")
-    # os.makedirs(results_dir, exist_ok=True)
-    # with open(results_path, 'w') as f:
-    #     results_data = {
-    #         'logs': logs.decode('utf-8'),
-    #         'result': result
-    #     }
-    #     json.dump(results_data, f)
-
     results_dir = output_path
     results_path = os.path.join(results_dir, result_filename)
     os.makedirs(results_dir, exist_ok=True)
 
     # os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    print("Param computation complete. Writing file to volume at:", results_path)
     with open(results_path, 'w') as f:
         json.dump(grads_list, f)
 
@@ -72,17 +51,39 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Load CSV data
+    print("Loading data")
     df = pd.read_csv("data.csv")
     X = df.drop(columns=["label_encoded"]).values
     y = df["label_encoded"].values.reshape(-1, 1)
 
     # Normalize
+    print("Normalizing data")
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
 
     # Convert to tensors
+    print("Converting data to tensors")
     X_tensor = torch.tensor(X, dtype=torch.float32)
     y_tensor = torch.tensor(y, dtype=torch.float32)
 
+    print("Extracting params")
+    updated_params = None
+    if os.path.exists("latest_params.json"):
+        with open("latest_params.json", "r") as f:
+            updated_params = json.load(f)
+    else:
+        print("No params found!")
+        updated_params = None
+
+    print("Creating Model")
     model = LogisticRegressionModel(input_dim=X.shape[1])
+    
+    print("Loading params")
+    if updated_params:
+        with torch.no_grad():
+            model.linear.weight.copy_(torch.tensor(updated_params["linear"]["weight"]))
+            model.linear.bias.copy_(torch.tensor(updated_params["linear"]["bias"]))
+            print("Adding params manually complete!")
+    
+    print("Computing params")
     compute_gradients(model, X_tensor, y_tensor, output_path=args.output_path, worker_id = args.worker_id, result_filename = args.result_filename)

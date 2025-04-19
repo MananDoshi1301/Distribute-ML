@@ -12,6 +12,7 @@ def begin_training(params: dict, docker_client, print_process):
     requirements_path = os.path.join(task_data_path, f"requirements-{record_id}.txt")
     model_path = os.path.join(task_data_path, f"model-{record_id}.py")
     data_path = os.path.join(task_data_path, data_filename)
+    model_params_path = os.path.join(task_data_path, f"latest_params-{record_id}.json")
     results_dir = os.path.join(task_data_path, f"results-{record_id}")        
     # output_json_host_path = os.path.join(results_dir, f"res-{record_id}-{uuid.uuid4()}.json")
     output_json_host_path = os.path.join(results_dir)
@@ -21,6 +22,7 @@ def begin_training(params: dict, docker_client, print_process):
     container_app_path = "/app"
     container_requirements_path = f"{container_app_path}/requirements.txt"
     container_model_path = f"{container_app_path}/model.py"
+    container_model_params_path = f"{container_app_path}/latest_params.json"
     container_data_path = f"{container_app_path}/{original_datafilename}"    
     # container_results_path = f"{container_app_path}/results.json"
     container_results_path = f"{container_app_path}/results"
@@ -43,6 +45,7 @@ def begin_training(params: dict, docker_client, print_process):
             command=command,
             volumes={
                 os.path.abspath(requirements_path): {"bind": container_requirements_path, "mode": "ro"},  # requirements.txt
+                os.path.abspath(model_params_path): {"bind": container_model_params_path, "mode": "ro"},  # model_params.py
                 os.path.abspath(model_path): {"bind": container_model_path, "mode": "ro"},  # model.py
                 os.path.abspath(data_path): {"bind": container_data_path, "mode": "ro"},  # data file
                 os.path.abspath(output_json_host_path): {"bind": container_results_path, "mode": "rw"},

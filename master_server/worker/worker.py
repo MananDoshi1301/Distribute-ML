@@ -3,7 +3,7 @@ from mysql.connector.pooling import PooledMySQLConnection
 from worker.utilities.fetch_sql_data import fetch_mysql_data
 from worker.utilities.post_sql_results import post_mysql_results
 from worker.database import MySQL_Socket
-from worker.utilities.manage_files import create_files, delete_files
+from worker.utilities.manage_files import LocalFileManager
 import worker.utilities.manage_training as worker_training
 # from worker.utilities.manage_venv import create_venv, remove_venv
 from worker.conf.amzn_s3 import S3Config
@@ -78,10 +78,12 @@ class Worker:
             #     "model_content": self.model_content,
             #     "requirements_filename": self.requirements_filename,
             #     "requirements_content": self.requirements_content,
-            #     "upload_time": self.upload_time
+            #     "upload_time": self.upload_time,
+            #     "model_params": self.model_params
             # }
-            
-            create_files(task_data["requirements_content"], task_data["model_content"], self.record_id, self.task_data_path) 
+            # create_files(task_data["requirements_content"], task_data["model_content"], self.record_id, self.task_data_path)             
+            local_file_manager = LocalFileManager(task_data["requirements_content"], task_data["model_content"], task_data["model_params"], self.record_id, self.task_data_path)
+            local_file_manager.create_all_files()
         else:
             print("No mysqlclient to fetch")          
 
@@ -112,6 +114,10 @@ class Worker:
         }
                 
         container_result, logs, results_dir, filename  = worker_training.begin_training(params, self.docker_client, print_process)
+        # print_process("Results")
+        # print(container_result)
+        # print_process("Logs")
+        # print(logs)
 
         self.info_dict = self.data_package
         res = {
@@ -153,12 +159,7 @@ class Worker:
         if isinstance(self.mysql_results_cursor, PooledMySQLConnection):
             print("<---- Client Results Posting Connection type:", type(self.mysql_results_cursor))
             response = post_mysql_results(self.mysql_results_cursor, post_dict)            
-            
-            if not isinstance(response, dict): 
-                print("Error posting data on mysql!")
-            
-            else:
-                print("Posting response:", response)
+            print("Results posting complete!")            
 
         # info dict:
         # {
@@ -207,7 +208,7 @@ def execute_model(params: dict):
     # # Setting virtual environment
     worker.setup_env()        
 
-    # # run model.py
+    # run model.py
     worker.execute_model_training()
 
     # Post results to the database

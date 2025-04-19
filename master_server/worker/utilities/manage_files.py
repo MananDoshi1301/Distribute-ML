@@ -31,7 +31,7 @@ class LocalFileManager:
         if isinstance(self.requirement_content, bytes):
             requirement_txt = self.requirement_content.decode('utf-8')
 
-        req_filename = os.path.join(self.base_path, f"requirements-{self.record_id}.py")
+        req_filename = os.path.join(self.base_path, f"requirements-{self.record_id}.txt")
         
         self.write_file(req_filename, requirement_txt)          
 

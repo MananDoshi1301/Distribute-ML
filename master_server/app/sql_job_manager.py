@@ -1,7 +1,7 @@
 from mysql.connector.pooling import PooledMySQLConnection
 from app.database import MySQL_Socket
 from flask import jsonify
-import time
+import time, json
 
 # data_params: dict = {
 #     "record_id": record_id,
@@ -125,14 +125,26 @@ def get_optimizer_data(record_id):
         """
         query_param = (record_id,)
         cursor.execute(query, query_param)
-        data = cursor.fetchall()                   
+        data = cursor.fetchall()   
+        # print("RESPONSE:\n", data)                
         processed_data = []
         for tup in data:
-            processed_data.append(tup[0])    
-        
+            # print()
+            # print(tup[0], type(tup[0]))
+            decoded_str = tup[0].decode('utf-8')            
+            parsed_data = json.loads(decoded_str)
+            processed_data.append(parsed_data)    
+        # print("RESPONSE:\n\n", processed_data)
+
         connection.close()
         return {"message": "Optimizer data fetched successfully!", "data": processed_data}
     except Exception as e:            
         connection.close()         
         print("Some error", e)
-        raise                 
+        raise               
+
+    [
+        (b'[{"layer": "linear", "type": "weight", "values": [[-0.04837987944483757, 0.015684878453612328, 0.014911244623363018, 0.09553203731775284, 0.03261147812008858, 0.04086461290717125, 0.03488050773739815, -0.08591537177562714]]}, {"layer": "linear", "type": "bias", "values": [-0.08242813497781754]}]',),
+
+        (b'[{"layer": "linear", "type": "weight", "values": [[-0.03884708508849144, 0.013743504881858826, -0.11262378841638565, 0.022557340562343597, 0.04209470376372337, -0.010569879785180092, -0.06886139512062073, -0.08061739057302475]]}, {"layer": "linear", "type": "bias", "values": [0.101676344871521]}]',)
+    ]
