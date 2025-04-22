@@ -17,6 +17,7 @@ def post_mysql_results(connection: PooledMySQLConnection, data_package: dict):
         #     "results_filename": self.info_dict["results"]["filenames"], 
         #     "results_content": model_content, 
         #     "training_iteration": self.info_dict["results"]["iteration"]
+        #     "data_originalname": self.data_package["data_filename"]"
         # }
 
         cursor = connection.cursor()
@@ -24,12 +25,12 @@ def post_mysql_results(connection: PooledMySQLConnection, data_package: dict):
 
         print("Cursor recieved!")
         query = """
-        INSERT into training_records (record_id, task_id, worker_id, data_chunkname, data_sourcename, results_filename, results_content, training_iteration) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s); 
+        INSERT into training_records (record_id, task_id, worker_id, data_chunkname, data_sourcename, results_filename, results_content, training_iteration, data_originalname) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s); 
         """        
         print("Posting results: Transaction Begins")        
         connection.start_transaction()        
-        query_params = (data_package["record_id"], data_package["task_id"], data_package["worker_id"], data_package["data_chunkname"], data_package["data_sourcename"], data_package["results_filename"], data_package["results_content"], data_package["training_iteration"])
+        query_params = (data_package["record_id"], data_package["task_id"], data_package["worker_id"], data_package["data_chunkname"], data_package["data_sourcename"], data_package["results_filename"], data_package["results_content"], data_package["training_iteration"], data_package["data_originalname"])
         cursor.execute(query, query_params)
         connection.commit()
         print("Posting results: Transaction Complete!")

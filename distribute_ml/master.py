@@ -18,11 +18,11 @@ class Master:
     def set_config(self, config_cls: type):
         """Configures parameters for the framework"""
         required_params = ["MODEL_ENTRYPOINT", "MODEL_DATA",
-                           "TASK_OUTPUT", "OPTIMIZER", "OPTIMIZER_PARAMS", "INITIAL_PARAMS"]
+                           "TASK_OUTPUT", "OPTIMIZER", "OPTIMIZER_PARAMS", "INITIAL_PARAMS", "TOTAL_ITERATIONS"]
         final_params = {
             "MODEL_ENTRYPOINT": "", "MODEL_DATA": "", "TASK_OUTPUT": "",
             "MODEL_REQUIREMENTS": "requirements.txt", "TASK_PARTITION": 10,
-            "OPTIMIZER": None, "OPTIMIZER_PARAMS": None, "INITIAL_PARAMS": None
+            "OPTIMIZER": None, "OPTIMIZER_PARAMS": None, "INITIAL_PARAMS": None, "TOTAL_ITERATIONS": 10
         }
 
         all_configs = {k: v for k, v in vars(config_cls).items()}
@@ -125,7 +125,7 @@ class Master:
 
     def train(self):
         """Pushes data to cloud, model to server database and initiates training on worker"""
-
+        total_iterations = self.task_params["TOTAL_ITERATIONS"]
         final_dict = {
             'data': {
                 'original_filename': './data.csv', 
@@ -135,6 +135,7 @@ class Master:
                 ], 
                 'partitions': 2
             }, 
+            'total_iterations': total_iterations,
             'record_id': '26ca4c5b-f605-429f-b5a6-159cfffb6062'
         }
         
@@ -164,7 +165,8 @@ class Master:
 
             final_dict = {
                 "data": data_dict,
-                "record_id": file_id
+                "record_id": file_id,
+                "total_iterations": total_iterations
             }
             print("\nfinal_dict =", final_dict)
             print()        

@@ -34,3 +34,5 @@ class DistributionConfig:
             "bias": [0.0]
         }
     }
+
+    TOTAL_ITERATIONS = 15

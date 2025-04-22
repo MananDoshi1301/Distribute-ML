@@ -1,6 +1,6 @@
 import numpy as np
 from collections import defaultdict
-from app.sql_job_manager import get_optimizer_data, update_training_state, save_new_params, delete_old_transaction_records
+from app.sql_job_manager import get_optimizer_data, update_training_state, save_new_params, delete_old_transaction_records, get_iterations_info, get_reiteration_info
 
 """
 Data Package:
@@ -127,7 +127,7 @@ class Optimizer:
             if response:
                 print("New weights saved successfully!")
         except Exception as e:
-            raise e    
+            raise e      
 
     def delete_old_jobs(self):
         try:
@@ -135,7 +135,23 @@ class Optimizer:
             if response:
                 print("Old jobs deleted successfully!")
         except Exception as e:
-            raise e    
+            raise e 
+
+    def iterations_data(self):
+        try:
+            response = get_iterations_info(record_id=self.record_id)
+            if response["success"] == True:
+                return response
+        except Exception as e:
+            raise e 
+        
+    def reiteration_data(self):
+        try:
+            response = get_reiteration_info(record_id=self.record_id)
+            if response["success"] == True:
+                return response
+        except Exception as e:
+            raise e 
 
 def print_process(header: str):
     print(f"{'=' * 7}\t {header} \t{'=' * 7}")
@@ -148,12 +164,28 @@ def run_optimizer(data_package: dict):
     print_process("Aggregating data")
     optimizer.aggregate_gradients()
     print_process("Optimizing data")
-    optimizer.optimize()  
+    optimizer.optimize()      
     print_process("Updating weights on db")
     optimizer.update_weights()
+    print_process("Getting iterations info")
+    response = optimizer.iterations_data()
+
+    if response["more_iterations"] == True:
+        print_process("Getting new iteration info")
+        data_dict_response = optimizer.reiteration_data()
+        data_dict = data_dict_response["data"]
+        response["new_iteration_data_dict"] = data_dict
+    else:
+        response["new_iteration_data_dict"] = None
+    # response["new_iteration_data_dict"] = None
+
     print_process("Deleting old recorded jobs")
     optimizer.delete_old_jobs()      
     print_process("Optimizer end!")
+
+    # print("********** Response:", response)
+
+    return response
     
 if __name__ == "__main__":
     # run_optimizer(data_package=)

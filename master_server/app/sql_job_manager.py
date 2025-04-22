@@ -22,15 +22,15 @@ def record_job(data_package: dict):
                 
         cursor = connection.cursor()
         if not cursor: print("Cursor not found for posting mysql results")
-        print("Cursor recieved!")
+        # print("Cursor recieved!")
 
         query = """
-        INSERT into master_training_records (record_id, task_id, num_partitions, expected_workers, completed_workers, status) 
-        VALUES (%s, %s, %s, %s, %s, %s); 
+        INSERT into master_training_records (record_id, task_id, num_partitions, expected_workers, completed_workers, status, total_iterations, iterations_complete) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s); 
         """        
         
         connection.start_transaction()        
-        query_params = (data_package["record_id"], data_package["task_id"], data_package["num_partitions"], data_package["expected_workers"], data_package["completed_workers"], data_package["status"])
+        query_params = (data_package["record_id"], data_package["task_id"], data_package["num_partitions"], data_package["expected_workers"], data_package["completed_workers"], data_package["status"], data_package["total_iterations"], data_package["iterations_complete"])
         cursor.execute(query, query_params)
         connection.commit()
         connection.close()
@@ -41,68 +41,53 @@ def record_job(data_package: dict):
         print("Some error", e)
         raise             
 
+
 def worker_task_complete(record_id: str):
     mysql_socket = MySQL_Socket()
-    connection: PooledMySQLConnection = mysql_socket.connection(db_name="model_training")
+    conn = mysql_socket.connection(db_name="model_training")
     try:
-        if not isinstance(connection, PooledMySQLConnection):
-            raise ValueError(f"Invalid connection object: {type(connection)}")
-                
-        cursor = connection.cursor()
-        if not cursor: print("Cursor not found for posting mysql results")
-        print("Cursor recieved!")
+        if not hasattr(conn, "cursor"):
+            raise ValueError(f"Invalid connection: {type(conn)}")
+        cursor = conn.cursor()
 
-        # Get number of workers complete
-        query = """
-        SELECT expected_workers, completed_workers FROM master_training_records
+        update_sql = """
+        UPDATE model_training.master_training_records
+        SET 
+          completed_workers = completed_workers + 1,
+          status = CASE
+            WHEN completed_workers + 1 = expected_workers THEN 'ready_to_optimize'
+            ELSE status
+          END
         WHERE record_id = %s
         """
+        cursor.execute(update_sql, (record_id,))
+        conn.commit()
 
-        cursor.execute(query, (record_id,))
-        data = cursor.fetchone()  
-        
-        if not data: 
-            print("Error in fetching data!")
-            return None
-        
-        expected_workers, completed_workers = int(data[0]), int(data[1])              
-        completed_workers += 1
+        # cursor.rowcount is how many rows were updated—should be 1.
+        if cursor.rowcount != 1:
+            raise RuntimeError(f"No such record: {record_id}")
 
-        # Insert worker completion
-        update_query = """
-        UPDATE master_training_records
-        SET completed_workers = %s
-        WHERE record_id = %s
-        """
-        # connection.start_transaction()        
-        query_params = (completed_workers, record_id)
-        cursor.execute(update_query, query_params)
+        # Now fetch the new counts & status in one go
+        cursor.execute(
+          "SELECT completed_workers, expected_workers, status "
+          "FROM model_training.master_training_records "
+          "WHERE record_id = %s",
+          (record_id,)
+        )
+        comp, exp, status = cursor.fetchone()
+        conn.close()
 
-        # Change state of operation
-        if expected_workers == completed_workers:
-            update_query = """
-            UPDATE master_training_records
-            SET status = %s
-            WHERE record_id = %s
-            """
-            query_params = ("ready_to_optimize", record_id)
-            cursor.execute(update_query, query_params)        
+        return {
+            "task_completion": (comp == exp),
+            "completed_workers": comp,
+            "expected_workers": exp,
+            "status": status
+        }
 
-        connection.commit()
-        connection.close()
-
-        res = {"task_completion": False}
-        if expected_workers == completed_workers:
-            res["task_completion"] = True
-            return res                    
-        
-        return res
-
-    except Exception as e:
-        connection.rollback()                
-        connection.close()
-        print("Some error", e)
-        raise     
+    except Exception:
+        conn.rollback()
+        conn.close()
+        raise
 
 def get_optimizer_data(record_id):    
     
@@ -115,7 +100,7 @@ def get_optimizer_data(record_id):
                 
         cursor = connection.cursor()
         if not cursor: print("Cursor not found for posting mysql results")
-        print("Cursor recieved!")
+        # print("Cursor recieved!")
 
         query = """
         SELECT results_content
@@ -157,7 +142,7 @@ def update_training_state(record_id):
                 
         cursor = connection.cursor()
         if not cursor: print("Cursor not found for posting mysql results")
-        print("Cursor recieved!")
+        # print("Cursor recieved!")
         update_query = """
         UPDATE master_training_records
         SET status = %s
@@ -185,7 +170,7 @@ def save_new_params(record_id: str, params: dict):
                 
         cursor = connection.cursor()
         if not cursor: print("Cursor not found for posting mysql results")
-        print("Cursor recieved!")
+        # print("Cursor recieved!")
         update_query = """
         UPDATE models
         SET initial_params = %s
@@ -213,7 +198,7 @@ def delete_old_transaction_records(record_id: str):
                 
         cursor = del_connection.cursor()
         if not cursor: print("Cursor not found for posting mysql results")
-        print("Cursor recieved!")
+        # print("Cursor recieved!")
         update_query = """
         DELETE FROM model_training.training_records
         WHERE record_id = %s
@@ -229,3 +214,159 @@ def delete_old_transaction_records(record_id: str):
         del_connection.close()
         print("Some error on updating state:", e)
         raise        
+
+def get_iterations_info(record_id: str) -> dict:
+    mysql_socket = MySQL_Socket()
+    connection: PooledMySQLConnection = mysql_socket.connection(db_name="model_training")
+    try:
+        if not isinstance(connection, PooledMySQLConnection):
+            raise ValueError(f"Invalid connection object: {type(connection)}")
+                
+        cursor = connection.cursor()
+        if not cursor: print("Cursor not found for posting mysql results")
+        # print("Cursor recieved!")
+
+        # Get number of workers complete
+        data_package = {
+            "success": False, 
+            "more_iterations": False,
+            "data": {
+                "total_iterations": None,
+                "iterations_complete": None
+            }
+        }
+        query = """
+        SELECT total_iterations, iterations_complete FROM model_training.master_training_records
+        WHERE record_id = %s
+        """
+
+        cursor.execute(query, (record_id,))
+        data = cursor.fetchone()  
+        
+        if not data: 
+            print("Error in fetching data!")
+            return data_package
+        
+        total_iterations, iterations_complete = int(data[0]), int(data[1])
+        data_package["success"] = True
+        
+        if total_iterations > iterations_complete:
+            next_iteration = iterations_complete + 1
+            data_package["more_iterations"] = True
+            update_query = """
+            UPDATE model_training.master_training_records
+            SET iterations_complete = %s
+            WHERE record_id = %s
+            """
+            query_params = (next_iteration, record_id)
+            cursor.execute(update_query, query_params)
+            
+            connection.commit()
+        connection.close()
+
+        data_package["data"]["total_iterations"] = total_iterations
+        data_package["data"]["iterations_complete"] = iterations_complete
+
+        return data_package
+    except Exception as e:
+        print("Some errors on fetching iterations_info:", e)
+        raise e
+
+
+def get_reiteration_info(record_id: str) -> dict:
+    mysql_socket = MySQL_Socket()
+    connection: PooledMySQLConnection = mysql_socket.connection(db_name="model_training")
+    try:
+        if not isinstance(connection, PooledMySQLConnection):
+            raise ValueError(f"Invalid connection object: {type(connection)}")
+                
+        cursor = connection.cursor()
+        if not cursor: print("Cursor not found for posting mysql results")
+        # print("Cursor recieved!")
+
+        # I need record_id, orginal_filename, filenames, partitions, 
+        # data_dict = {
+        #     'original_filename': './data.csv', 
+        #     'filenames': [
+        #         ['data_chunk_1.csv', '5d3a7010-9f87-45c8-b82a-bade79ad0e37-data_chunk_1.csv'], 
+        #         ['data_chunk_2.csv', '085014c1-55d7-40eb-a4a4-8c5516008d2d-data_chunk_2.csv']
+        #     ], 
+        #     'partitions': 2, 
+        #     'record_id': '80c69045-06a0-4d48-b506-118cc8be904d'
+        # }
+        data_dict = {
+            "record_id": record_id,
+            "original_filename": "",
+            "filenames": [],
+            "partitions": 0            
+        }
+
+        # getoriginal_filename
+        query = """
+        SELECT data_originalname FROM model_training.training_records 
+        WHERE record_id=%s
+        """
+        cursor.execute(query, (record_id,))
+        data = cursor.fetchall()          
+        if not data: 
+            print("Error in fetching data_originalname!")
+            raise ValueError("No data found")            
+                
+        original_filename = data[0][0]
+        data_dict["original_filename"] = original_filename
+
+        # Get all data_chunkname, data_sourcename
+        query = """
+        SELECT data_chunkname, data_sourcename FROM model_training.training_records 
+        WHERE record_id = %s
+        """
+        cursor.execute(query, (record_id,))
+        data = cursor.fetchall()          
+        if not data: 
+            print("Error in fetching data_chunkname or data_sourcename!")
+            raise ValueError("No data found")    
+
+        # print("-9-9-9-9-9-9-9-: datanames:", data, type(data))     
+
+        training_data_list = []
+        for data_tuple in data:            
+            training_data_list.append([data_tuple[0], data_tuple[1]])
+        
+        # original_filename = data[0]
+        # data_dict["original_filename"] = original_filename        
+        data_dict["filenames"] = training_data_list
+        data_dict["partitions"] = len(training_data_list)
+        connection.close()
+        
+        return {"success": True, "data": data_dict}
+    except Exception as e:
+        print("Some errors on fetching iterations_info:", e)
+        raise e
+    ...
+
+def update_worker_on_new_iteration(record_id):
+    mysql_socket = MySQL_Socket()
+    connection: PooledMySQLConnection = mysql_socket.connection(db_name="model_training")
+    try:
+        if not isinstance(connection, PooledMySQLConnection):
+            raise ValueError(f"Invalid connection object: {type(connection)}")
+                
+        cursor = connection.cursor()
+        if not cursor: print("Cursor not found for posting mysql results")
+        # print("Cursor recieved!")
+        update_query = """
+        UPDATE model_training.master_training_records
+        SET completed_workers = %s
+        WHERE record_id = %s
+        """
+        connection.start_transaction()
+        query_params = (0, record_id)
+        cursor.execute(update_query, query_params)   
+        connection.commit()
+        connection.close()
+
+    except Exception as e:
+        connection.rollback()                
+        connection.close()
+        print("Some error on updating state:", e)
+        raise   

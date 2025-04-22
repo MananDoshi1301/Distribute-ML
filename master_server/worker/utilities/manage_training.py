@@ -65,7 +65,7 @@ def begin_training(params: dict, docker_client, print_process):
         #         'result': result
         #     }
         #     json.dump(results_data, f)
-        # container.remove()
+        container.remove()
         print_process("Model Training Completion")
         return result, logs, output_json_host_path, result_filename
     except Exception as e:

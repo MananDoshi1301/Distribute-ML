@@ -23,7 +23,7 @@ class Worker:
 
         # Data
         self.data_filename, self.data_fileobj = data_package['data']   
-        self.original_datafilename = data_package["data_filename"]    
+        self.original_datafilename = data_package["data_filename"]            
         self.iteration = 0   
         if "results" in self.data_package and "iteration" in self.data_package["results"]:
             self.iteration = self.data_package["results"]["iteration"]
@@ -153,7 +153,8 @@ class Worker:
             "data_sourcename": self.info_dict["data"][1], 
             "results_filename": self.info_dict["results"]["filenames"], 
             "results_content": json.dumps(model_content), 
-            "training_iteration": self.info_dict["results"]["iteration"]
+            "training_iteration": self.info_dict["results"]["iteration"],
+            "data_originalname": self.original_datafilename
         }
         
         if isinstance(self.mysql_results_cursor, PooledMySQLConnection):
