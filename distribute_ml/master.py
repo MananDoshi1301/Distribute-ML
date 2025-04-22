@@ -22,7 +22,8 @@ class Master:
         final_params = {
             "MODEL_ENTRYPOINT": "", "MODEL_DATA": "", "TASK_OUTPUT": "",
             "MODEL_REQUIREMENTS": "requirements.txt", "TASK_PARTITION": 10,
-            "OPTIMIZER": None, "OPTIMIZER_PARAMS": None, "INITIAL_PARAMS": None, "TOTAL_ITERATIONS": 10
+            "OPTIMIZER": None, "OPTIMIZER_PARAMS": None, "INITIAL_PARAMS": None, "TOTAL_ITERATIONS": 10,
+            "TRAIN_SPLIT": 0.7, "TEST_SPLIT": 0.15, "VALIDATION_SPLIT": 0.15
         }
 
         all_configs = {k: v for k, v in vars(config_cls).items()}
@@ -108,10 +109,11 @@ class Master:
         # model_dict: dict = {"id": model_id, "filename": model_name}
         return model_id
 
-    def __push_data_to_cloud(self) -> dict:
+    def __push_data_to_cloud(self, record_id: str) -> dict:
         # -- Push data to cloud
         data_filename, partitions = self.task_params["MODEL_DATA"], self.task_params["TASK_PARTITION"]
-        data_upload = CreateDataPartitions(data_filename, partitions)
+        train_split, test_split, validation_split = self.task_params["TRAIN_SPLIT"], self.task_params["TEST_SPLIT"], self.task_params["VALIDATION_SPLIT"]
+        data_upload = CreateDataPartitions(record_id=record_id, filename=data_filename, partitions=partitions, train_split=train_split, test_split=test_split, validation_split=validation_split)
         data_upload.initiate()
         new_names_list: list[tuple] = data_upload.get_new_filename_list()
 
@@ -142,15 +144,15 @@ class Master:
         execute_all = True
 
         if execute_all:
-            # -- Validate incoming code and data
-            print_process("Pushing data to cloud begins...")
-            data_dict: Dict[str] = self.__push_data_to_cloud()
-            print_process("Pushing data to cloud completes!")
-
             # -- Push model to database == POST request to file_transfer_app
             print_process("Pushing model to cloud begins...")
             model_id: str = self.__push_model_to_cloud()
             print_process("Pushing model to cloud ends!")
+
+            # -- Validate incoming code and data
+            print_process("Pushing data to cloud begins...")
+            data_dict: Dict[str] = self.__push_data_to_cloud(record_id=model_id)
+            print_process("Pushing data to cloud completes!")
 
             # -- Push requirements.txt file
             file_id = model_id
@@ -175,8 +177,8 @@ class Master:
         try:
             url = f"{self.env_configs.get_task_manager_url().rstrip('/')}/tasks"            
             print_process("Running jobs on workers begin...")
-            response = requests.post(url, json=final_dict)
-            print("Response from master:", response.text)            
+            # response = requests.post(url, json=final_dict)
+            # print("Response from master:", response.text)            
         except Exception as e:
             print("Error submitting tasks to manager:", e)
 

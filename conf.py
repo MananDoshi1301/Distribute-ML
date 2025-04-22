@@ -36,3 +36,7 @@ class DistributionConfig:
     }
 
     TOTAL_ITERATIONS = 15
+
+    TRAIN_SPLIT = 0.7
+    TEST_SPLIT = 0.15
+    VALIDATION_SPLIT = 0.15

@@ -25,15 +25,19 @@ def save_chunk(new_filename: str, df: DataFrame, start: int, end: int):
       
 
 class CreateDataPartitions:
-    def __init__(self, filename: str, partitions: int):
+    def __init__(self, record_id: str, filename: str, partitions: int, train_split: int, test_split: int, validation_split: int):
         self.filename: str = filename
+        self.record_id = record_id
         self.n: int = partitions    
+        self.train_split = train_split
+        self.test_split = test_split
+        self.validation_split = validation_split
         self.new_filename_list: list = [] 
 
         baseconfig = BaseConfig()
         access_keys = baseconfig.get_s3_access()
         self.__access_key_id: str = access_keys[0]
-        self.__secret_access_key: str = access_keys[1]
+        self.__secret_access_key: str = access_keys[1]        
     
     def get_new_filename_list(self) -> list[tuple]:
         return_list = []        
@@ -50,19 +54,37 @@ class CreateDataPartitions:
 
         try:
             df: DataFrame = pd.read_csv(self.filename)
-            chunk_size: int = len(df) // self.n
-
+            total_train_rows = int(len(df) * self.train_split)
+            chunk_size: int = (total_train_rows) // self.n
+            print("Df length:", len(df))
+            print("Total_Train_Rows:", total_train_rows)
             new_filename_list: list[str] = []
             for i in range(self.n):
-                start: int = i * chunk_size
-                end: int = (i + 1) * chunk_size if i < self.n - 1 else len(df)
+                start: int = int(i * chunk_size)
+                end: int = int((i + 1) * chunk_size) if i < self.n - 1 else total_train_rows
                 new_filename = f"{extract_filename(self.filename)}_chunk_{i + 1}.csv"
 
+                print(f"Data split {i + 1}:", start, end)
                 # First save data on local and then take them on and push                
                 save_chunk(new_filename, df, start, end)            
 
                 new_filename_list.append(new_filename)
             self.new_filename_list = new_filename_list
+
+            # Split test and validation            
+            start_test_split = int(self.train_split * len(df))
+            end_test_split = start_test_split + int(self.test_split * len(df))
+            print("Test split", start_test_split, end_test_split)
+            new_test_filename = f"test_chunk.csv"
+            save_chunk(new_test_filename, df, start_test_split, end_test_split)         
+
+            start_validate_split = end_test_split
+            end_validate_split = len(df)
+            print("Validation split", start_validate_split, end_validate_split)
+            new_validate_filename = f"validate_chunk.csv"
+            save_chunk(new_validate_filename, df, start_validate_split, end_validate_split)         
+            new_filename_list.append(new_test_filename)
+            new_filename_list.append(new_validate_filename)
             return new_filename_list
 
         except Exception as e:
@@ -95,6 +117,11 @@ class CreateDataPartitions:
 
             except Exception as e:
                 print("Error in uploading file:", e)    
+
+        self.new_filename_list.pop()
+        self.new_filename_list.pop()
+
+    
 
     def initiate(self):
         print("Splitting Data")
