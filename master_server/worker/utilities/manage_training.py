@@ -1,6 +1,6 @@
 import os
 
-def begin_training(params: dict, docker_client, print_process):
+def begin_training(params: dict, docker_client, print_process, testing: bool = False):
     
     task_data_path = params['task_data_path']
     record_id = params['record_id']
@@ -39,6 +39,8 @@ def begin_training(params: dict, docker_client, print_process):
             # f"python {container_model_path}"
             f"python {container_model_path} --output_path {container_results_path} --worker_id {worker_id} --result_filename {result_filename}"
         ]
+        if testing: command_list[-1] += " --test_data"
+        
         command = f"/bin/bash -c '{' && '.join(command_list)}'"
         container = docker_client.containers.run(
             "ml-base:latest",  

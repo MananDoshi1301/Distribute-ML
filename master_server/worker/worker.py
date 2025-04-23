@@ -91,6 +91,7 @@ class Worker:
         """Fetch training data chunk from cloud"""
         print_process("Fetching Model Training Data")
         path = os.path.join(self.task_data_path, self.data_filename)
+        # print("@@@@@File Object: ", self.data_fileobj)
         self.s3_client.download_file(self.bucket_name, self.data_fileobj, path)                  
 
     def setup_env(self):
@@ -98,7 +99,7 @@ class Worker:
         # self.venv_path = create_venv(self.record_id, self.task_data_path)            
         ...
 
-    def execute_model_training(self):        
+    def execute_model_training(self, testing: bool = False):        
         # if not self.venv_path or not os.path.isdir(self.venv_path):
         #     raise ValueError(f"Invalid virtual environment path: {self.venv_path}")
         
@@ -113,11 +114,11 @@ class Worker:
             "worker_id": self.worker_id
         }
                 
-        container_result, logs, results_dir, filename  = worker_training.begin_training(params, self.docker_client, print_process)
-        # print_process("Results")
-        # print(container_result)
-        # print_process("Logs")
-        # print(logs)
+        container_result, logs, results_dir, filename  = worker_training.begin_training(params, self.docker_client, print_process, testing=testing)
+        print_process("Results")
+        print(container_result)
+        print_process("Logs")
+        print(logs)
 
         self.info_dict = self.data_package
         res = {
@@ -186,16 +187,23 @@ class Worker:
             print("Post training exception on worker:", e)                    
     
 
-def execute_model(params: dict):
+def execute_model(params: dict, testing: bool = False):
     """This install and runs model on worker node"""
     
-    # Extract data params
-    # params = {
-    #     'data': ('data_chunk_1.csv', '143e2b7b-8129-4336-8141-8a0fc1881259-data_chunk_1.csv'), 
-    #     "data_filename": "data.csv"
-    #     'record_id': 'e4ca6707-4e80-4fbc-acdf-b607d58666e0'
-    #     "task_id": "fb86cac4-0ea4-44e5-9fdd-934605a0bb73"
-    # }    
+    # TRAINING PACKAGE
+    # data_dict = {
+    #     'original_filename': './data.csv', 
+    #     'filenames': [
+    #         ['data_chunk_1.csv', '5d3a7010-9f87-45c8-b82a-bade79ad0e37-data_chunk_1.csv'], 
+    #         ['data_chunk_2.csv', '085014c1-55d7-40eb-a4a4-8c5516008d2d-data_chunk_2.csv']
+    #     ], 
+    #     'partitions': 2, 
+    #     'record_id': '80c69045-06a0-4d48-b506-118cc8be904d',
+    #     'testing': False
+    # }
+
+    testing = params["testing"]
+    print("##### Worker Params =", params)
 
     # Initialize a worker
     worker = Worker(params)    
@@ -210,10 +218,13 @@ def execute_model(params: dict):
     worker.setup_env()        
 
     # run model.py
-    worker.execute_model_training()
+    worker.execute_model_training(testing=testing)
 
-    # Post results to the database
-    worker.post_training_results()
+    if testing == False:
+        # Post results to the database
+        worker.post_training_results()
 
-    # return output and inform master
-    worker.post_training_request()
+        # return output and inform master
+        worker.post_training_request()
+    else:
+        "Testing Complete"

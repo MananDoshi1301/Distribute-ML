@@ -75,13 +75,13 @@ class CreateDataPartitions:
             start_test_split = int(self.train_split * len(df))
             end_test_split = start_test_split + int(self.test_split * len(df))
             print("Test split", start_test_split, end_test_split)
-            new_test_filename = f"test_chunk.csv"
+            new_test_filename = f"test_chunk_1.csv"
             save_chunk(new_test_filename, df, start_test_split, end_test_split)         
 
             start_validate_split = end_test_split
             end_validate_split = len(df)
             print("Validation split", start_validate_split, end_validate_split)
-            new_validate_filename = f"validate_chunk.csv"
+            new_validate_filename = f"validate_chunk_1.csv"
             save_chunk(new_validate_filename, df, start_validate_split, end_validate_split)         
             new_filename_list.append(new_test_filename)
             new_filename_list.append(new_validate_filename)
@@ -109,7 +109,10 @@ class CreateDataPartitions:
         
         # Upload files
         for idx, file in enumerate(filelist):
-            object_name = f"{uuid.uuid4()}-{os.path.basename(file)}"
+            # UUIDs for data chunks and record_id for test and validate data
+            if idx < len(filelist) - 2: header = uuid.uuid4()
+            else: header = self.record_id
+            object_name = f"{header}-{os.path.basename(file)}"
             try:
                 s3_client.upload_file(file, bucket_name, object_name)
                 self.new_filename_list[idx] = (file, object_name)

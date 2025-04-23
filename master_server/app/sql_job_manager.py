@@ -41,7 +41,7 @@ def record_job(data_package: dict):
         print("Some error", e)
         raise             
 
-
+# Worker call
 def worker_task_complete(record_id: str):
     mysql_socket = MySQL_Socket()
     conn = mysql_socket.connection(db_name="model_training")
@@ -89,6 +89,7 @@ def worker_task_complete(record_id: str):
         conn.close()
         raise
 
+# Optimizer calls
 def get_optimizer_data(record_id):    
     
 
@@ -272,7 +273,6 @@ def get_iterations_info(record_id: str) -> dict:
         print("Some errors on fetching iterations_info:", e)
         raise e
 
-
 def get_reiteration_info(record_id: str) -> dict:
     mysql_socket = MySQL_Socket()
     connection: PooledMySQLConnection = mysql_socket.connection(db_name="model_training")
@@ -370,3 +370,5 @@ def update_worker_on_new_iteration(record_id):
         connection.close()
         print("Some error on updating state:", e)
         raise   
+
+# Testing calls

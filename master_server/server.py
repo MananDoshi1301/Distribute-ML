@@ -10,10 +10,7 @@ from app.sql_job_manager import record_job, worker_task_complete, update_worker_
 
 server: Flask = create_app()
 
-# setup config
-
-# Initialize redis
-
+# TRAINING PACKAGE
 # final_data= {
 #     'data': {
 #         "original_filename": "data.csv"
@@ -39,7 +36,7 @@ def get_rq_client():
         print(e)
         return False, err_res, 400
     
-def push_tasks(data_dict: dict) -> list:
+def push_tasks(data_dict: dict, testing: bool = False) -> list:
     # data_dict = {
     #     'original_filename': './data.csv', 
     #     'filenames': [
@@ -47,12 +44,13 @@ def push_tasks(data_dict: dict) -> list:
     #         ['data_chunk_2.csv', '085014c1-55d7-40eb-a4a4-8c5516008d2d-data_chunk_2.csv']
     #     ], 
     #     'partitions': 2, 
-    #     'record_id': '80c69045-06a0-4d48-b506-118cc8be904d'
+    #     'record_id': '80c69045-06a0-4d48-b506-118cc8be904d',
+    #     'testing': False
     # }
 
     #Filenames    
     response, rq_client, statuscode = get_rq_client()
-    if statuscode == 400 or response == False: raise ValueError(f"No rq client found: {rq_client}")
+    if statuscode == 400 or response == False: raise ValueError(f"No rq client found: {rq_client}")    
     data_filename = data_dict["original_filename"]
     record_id = data_dict['record_id']
     task_id = str(uuid.uuid4())
@@ -65,7 +63,8 @@ def push_tasks(data_dict: dict) -> list:
             "data_filename": data_filename,
             "record_id": record_id,
             "task_id": task_id,
-            "worker_id": worker_id
+            "worker_id": worker_id,
+            "testing": testing
         }
         try:
             job = rq_client.enqueue(execute_model, data_params)
@@ -75,6 +74,11 @@ def push_tasks(data_dict: dict) -> list:
             err_res["Error enqueuing tasks"]
             return err_res, 400
     return job_list
+
+def test_results(data_dict: dict):
+    print("Testing Begins...")
+    push_tasks(data_dict=data_dict, testing=True)
+    print("Testing Ends!")
 
 
 @server.route("/tasks", methods=["POST"])
@@ -164,7 +168,17 @@ def optimize_gradient():
             update_worker_on_new_iteration(record_id=record_id)
             _ = push_tasks(data_dict=data_dict)
         else:
-            print("<********* Iterations Complete *********>")
+            print("<********* Iterations Complete, Testing Begins *********>")
+            test_package = {
+                "original_filename": "test.csv",                
+                "filenames":[
+                    ["test_chunk_1.csv", f"{record_id}-test_chunk_1.csv"],
+                ],
+                "partitions": 1,                
+                "total_iterations": 1,
+                "record_id": record_id
+            }                        
+            test_results(data_dict=test_package)
 
     return {"data": data}, 200
 

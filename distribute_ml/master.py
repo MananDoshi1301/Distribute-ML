@@ -177,8 +177,8 @@ class Master:
         try:
             url = f"{self.env_configs.get_task_manager_url().rstrip('/')}/tasks"            
             print_process("Running jobs on workers begin...")
-            # response = requests.post(url, json=final_dict)
-            # print("Response from master:", response.text)            
+            response = requests.post(url, json=final_dict)
+            print("Response from master:", response.text)            
         except Exception as e:
             print("Error submitting tasks to manager:", e)
 

@@ -19,18 +19,20 @@ class Optimizer:
         self.data_aggregation = {}
         self.lr = data_package.get("lr", 0.01)
         self.old_params = data_package.get("initial_params", {})        
+        self.beta = 0.9
+        self.velocity = defaultdict(lambda: defaultdict(lambda: 0))
 
 
     def optimize(self):
-        """self.data_aggregation = {
-            'linear': {
-                'weight': [
-                    [[-0.015894798561930656, 0.014964492991566658, -0.10894323140382767, 0.04732732102274895, -0.05168985575437546, -0.011154105886816978, -0.09705221652984619, -0.026199696585536003]], 
-                    [[-0.05793697386980057, 0.002460323041304946, -0.030546939000487328, 0.052860986441373825, -0.049563560634851456, -0.03070954978466034, 0.039908211678266525, -0.07345663011074066]]
-                ], 
-                'bias': [[0.09387437999248505], [-0.012285656295716763]]
-            }
-        }"""
+        # """self.data_aggregation = {
+        #     'linear': {
+        #         'weight': [
+        #             [[-0.015894798561930656, 0.014964492991566658, -0.10894323140382767, 0.04732732102274895, -0.05168985575437546, -0.011154105886816978, -0.09705221652984619, -0.026199696585536003]], 
+        #             [[-0.05793697386980057, 0.002460323041304946, -0.030546939000487328, 0.052860986441373825, -0.049563560634851456, -0.03070954978466034, 0.039908211678266525, -0.07345663011074066]]
+        #         ], 
+        #         'bias': [[0.09387437999248505], [-0.012285656295716763]]
+        #     }
+        # }"""
         # Implement optimizer
 
         updated_params = {}
@@ -51,7 +53,11 @@ class Optimizer:
                     # Create a zero array of the same shape as the gradient
                     old_param = np.zeros_like(avg_gradient)
                 
-                new_param = old_param - self.lr * avg_gradient
+                # new_param = old_param - self.lr * avg_gradient
+                # updated_params[layer_name][param_type] = new_param.tolist()
+                v = self.beta * self.velocity[layer_name][param_type] + (1 - self.beta) * avg_gradient
+                new_param = old_param - self.lr * v
+                self.velocity[layer_name][param_type] = v
                 updated_params[layer_name][param_type] = new_param.tolist()
 
         self.updated_params = updated_params
