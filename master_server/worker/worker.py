@@ -20,6 +20,7 @@ class Worker:
         self.mysql_results_cursor: PooledMySQLConnection = self.mysql_socket.client_fetcher(db_name="model_training")        
         self.data_package: dict = data_package
         self.env_configs = BaseConfig()
+        self.logs = None
 
         # Data
         self.data_filename, self.data_fileobj = data_package['data']   
@@ -118,7 +119,8 @@ class Worker:
         print_process("Results")
         print(container_result)
         print_process("Logs")
-        print(logs)
+        self.logs = logs.decode("utf-8")        
+        print(self.logs)
 
         self.info_dict = self.data_package
         res = {
@@ -177,10 +179,21 @@ class Worker:
         #     }
         # }        
 
-    def post_training_request(self):
-        url = f"{self.env_configs.get_task_manager_url().rstrip('/')}/optimize"
+    def post_testing_results(self):
+        print_process(f"Testing logs type: {type(self.logs)}")
+        print(self.logs)
+        if self.logs.strip():  # only parse if logs is not empty
+            self.info_dict = {"test results": self.logs}
+        else:
+            self.info_dict = {"test results": "No logs found or parsing failed"}        
+        
+    def post_training_request(self, testing = False):
+        if not testing: url = f"{self.env_configs.get_task_manager_url().rstrip('/')}/optimize"
+        else: url = f"{self.env_configs.get_task_manager_url().rstrip('/')}/results"
+        
         # Info on: worker_id, data_trained, result_path, filename
         try:
+
             response = requests.post(url, json=self.info_dict)
             # delete_files(self.record_id, self.task_data_path)
         except Exception as e:
@@ -224,7 +237,9 @@ def execute_model(params: dict, testing: bool = False):
         # Post results to the database
         worker.post_training_results()
 
-        # return output and inform master
-        worker.post_training_request()
     else:
         "Testing Complete"
+        worker.post_testing_results()
+
+    # return output and inform master
+    worker.post_training_request(testing=testing)

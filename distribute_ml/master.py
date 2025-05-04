@@ -18,7 +18,7 @@ class Master:
     def set_config(self, config_cls: type):
         """Configures parameters for the framework"""
         required_params = ["MODEL_ENTRYPOINT", "MODEL_DATA",
-                           "TASK_OUTPUT", "OPTIMIZER", "OPTIMIZER_PARAMS", "INITIAL_PARAMS", "TOTAL_ITERATIONS"]
+                           "TASK_OUTPUT", "OPTIMIZER_PARAMS", "INITIAL_PARAMS", "TOTAL_ITERATIONS"]
         final_params = {
             "MODEL_ENTRYPOINT": "", "MODEL_DATA": "", "TASK_OUTPUT": "",
             "MODEL_REQUIREMENTS": "requirements.txt", "TASK_PARTITION": 10,
@@ -132,13 +132,19 @@ class Master:
             'data': {
                 'original_filename': './data.csv', 
                 'filenames': [
-                    ('data_chunk_1.csv', '49248c10-249e-4dfc-9911-8e7038d290d4-data_chunk_1.csv'), 
-                    ('data_chunk_2.csv', 'd593839a-d207-48b1-a603-df0ca50bb67e-data_chunk_2.csv')
+                    ('data_chunk_1.csv', '157f418e-eb65-4e1e-a956-c32c3cdc6c71-data_chunk_1.csv'), 
+                    ('data_chunk_2.csv', '7e179812-519d-4f7d-a926-b01e8aee3656-data_chunk_2.csv'), 
+                    ('data_chunk_3.csv', '64c9776c-0626-41d3-a9d8-3c988731d7d1-data_chunk_3.csv'), 
+                    ('data_chunk_4.csv', 'f93dde7e-c714-4eef-bb6b-16707c74d323-data_chunk_4.csv'), 
+                    ('data_chunk_5.csv', '9084c174-0388-4fdb-be61-1012b7c36824-data_chunk_5.csv'), 
+                    ('data_chunk_6.csv', '9681ed12-7bb1-4e9c-b350-4e67e3056582-data_chunk_6.csv'), 
+                    ('data_chunk_7.csv', '597fbdcf-617b-4734-8353-bf03f66a90a0-data_chunk_7.csv'), 
+                    ('data_chunk_8.csv', '65675c28-cf1c-45ca-8e68-5bbe7bd02f80-data_chunk_8.csv')
                 ], 
-                'partitions': 2
+                'partitions': 8
             }, 
-            'total_iterations': total_iterations,
-            'record_id': '26ca4c5b-f605-429f-b5a6-159cfffb6062'
+            'record_id': 'd860efe0-7482-4eb3-bd58-9f29269949b9', 
+            'total_iterations': 4
         }
         
         execute_all = True

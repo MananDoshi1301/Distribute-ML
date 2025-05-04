@@ -1,6 +1,6 @@
 import numpy as np
 from collections import defaultdict
-from app.sql_job_manager import get_optimizer_data, update_training_state, save_new_params, delete_old_transaction_records, get_iterations_info, get_reiteration_info
+from app.sql_job_manager import get_optimizer_data, update_training_state, save_new_params, delete_old_transaction_records, get_iterations_info, get_reiteration_info, are_params_same
 
 """
 Data Package:
@@ -62,9 +62,6 @@ class Optimizer:
 
         self.updated_params = updated_params
         print("UPDATED PARAMS:\n", updated_params)
-        
-    # def optimize(self):
-    #     ...
 
     def aggregate_gradients(self):
                 
@@ -135,6 +132,19 @@ class Optimizer:
         except Exception as e:
             raise e      
 
+    def is_more_training_reqd(self):
+        
+        try:
+            response = are_params_same(record_id=self.record_id, params=self.updated_params)
+            if response == True:
+                print("More training required!")
+                return True
+            else:
+                print("No more training required!")
+                return False
+        except Exception as e:
+            raise e        
+
     def delete_old_jobs(self):
         try:
             response = delete_old_transaction_records(record_id=self.record_id)
@@ -171,10 +181,22 @@ def run_optimizer(data_package: dict):
     optimizer.aggregate_gradients()
     print_process("Optimizing data")
     optimizer.optimize()      
+    # print_process("Matching Params!")
+    # switch_more_training_reqd = optimizer.is_more_training_reqd()
     print_process("Updating weights on db")
     optimizer.update_weights()
     print_process("Getting iterations info")
     response = optimizer.iterations_data()
+    
+    # print("~~~~~Optimizer Response:", response)
+    # {
+    #     'success': True, 
+    #     'more_iterations': False, 
+    #     'data': {
+    #         'total_iterations': 1, 
+    #         'iterations_complete': 1
+    #     }
+    # }
 
     if response["more_iterations"] == True:
         print_process("Getting new iteration info")
@@ -182,6 +204,7 @@ def run_optimizer(data_package: dict):
         data_dict = data_dict_response["data"]
         response["new_iteration_data_dict"] = data_dict
     else:
+        # response["more_iterations"] == False
         response["new_iteration_data_dict"] = None
     # response["new_iteration_data_dict"] = None
 

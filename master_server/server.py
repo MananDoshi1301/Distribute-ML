@@ -67,7 +67,7 @@ def push_tasks(data_dict: dict, testing: bool = False) -> list:
             "testing": testing
         }
         try:
-            job = rq_client.enqueue(execute_model, data_params)
+            job = rq_client.enqueue(execute_model, data_params, job_timeout=600)
             job_list.append(str(worker_id))            
         except Exception as e:
             print(e)
@@ -164,8 +164,9 @@ def optimize_gradient():
         # If iterations complete < total_iterations: run the task again
         if data["total_iterations"] > data["iterations_complete"]:                    
             data_dict = optimizer_response["new_iteration_data_dict"]
-            print("Training again!")
+            print(f"Training for iteration: {data["iterations_complete"] + 1}!")
             update_worker_on_new_iteration(record_id=record_id)
+            print(data_dict)
             _ = push_tasks(data_dict=data_dict)
         else:
             print("<********* Iterations Complete, Testing Begins *********>")
@@ -181,6 +182,15 @@ def optimize_gradient():
             test_results(data_dict=test_package)
 
     return {"data": data}, 200
+
+
+@server.route("/results", methods=["POST"])
+@return_response
+def results_endpoint():
+    data = request.get_json()
+    print(data)
+
+    return "Testing complete!", 200    
 
 if __name__ == "__main__":
     PORT = 5002

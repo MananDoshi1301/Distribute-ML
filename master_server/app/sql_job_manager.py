@@ -161,6 +161,43 @@ def update_training_state(record_id):
         print("Some error on updating state:", e)
         raise     
 
+def are_params_same(record_id: str, params: dict) -> bool:
+    """Check model_files with old and new params"""
+    mysql_socket = MySQL_Socket()
+    connection: PooledMySQLConnection = mysql_socket.connection(db_name="model_files")
+
+    try:
+        if not isinstance(connection, PooledMySQLConnection):
+            raise ValueError(f"Invalid connection object: {type(connection)}")
+                
+        cursor = connection.cursor()
+        if not cursor: print("Cursor not found for posting mysql results")
+        # print("Cursor recieved!")
+        select_query = """
+        SELECT initial_params
+        FROM models
+        WHERE id = %s        
+        """        
+        query_params = (record_id,)
+        cursor.execute(select_query, query_params)   
+        data = cursor.fetchone()  
+        if not data: 
+            print("Error in fetching data!")
+            return False
+        
+        old_params = json.loads(data[0])
+        print("## old params:", old_params)
+        print("## new params:", params)
+        if old_params == params: return True
+
+        connection.close()
+        return False
+
+    except Exception as e:        
+        connection.close()
+        print("Some error on updating state:", e)
+        raise    
+
 def save_new_params(record_id: str, params: dict):
     """Update model_files with this new weights"""
     mysql_socket = MySQL_Socket()

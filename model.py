@@ -5,6 +5,8 @@ import os, uuid
 import json
 import argparse
 import pandas as pd
+import numpy as np
+from sklearn.datasets import load_breast_cancer
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
@@ -61,20 +63,22 @@ def evaluate_model(model, X, y):
     print("Recall:", recall_score(y_true, y_pred))
     print("F1 Score:", f1_score(y_true, y_pred))
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()    
     parser.add_argument("--output_path", type=str, default="/app/results/grads.json")
-    parser.add_argument("--worker_id", type=str, default=uuid.uuid4())
+    parser.add_argument("--worker_id", type=str, default=str(uuid.uuid4()))
     parser.add_argument("--result_filename", type=str, default=f"res-random-{uuid.uuid4()}.json")
-    parser.add_argument("--test_data", action='store_true')    
-    args = parser.parse_args()
+    parser.add_argument("--test_data", action='store_true')
+    # parser.add_argument("--prepare_data", action='store_true', help="Prepare breast cancer dataset")
+    args = parser.parse_args()    
 
     # Load CSV data
     print("Loading data")
     local_filename = "test.csv" if args.test_data else "data.csv"
     df = pd.read_csv(local_filename) 
-    X = df.drop(columns=["label_encoded"]).values
-    y = df["label_encoded"].values.reshape(-1, 1)
+    X = df.drop(columns=["target"]).values
+    y = df["target"].values.reshape(-1, 1)
 
     # Normalize
     print("Normalizing data")
@@ -110,4 +114,4 @@ if __name__ == "__main__":
         evaluate_model(model, X, y)
     else:        
         print("Computing params")
-        compute_gradients(model, X_tensor, y_tensor, output_path=args.output_path, worker_id = args.worker_id, result_filename = args.result_filename)
+        compute_gradients(model, X_tensor, y_tensor, output_path=args.output_path, worker_id=args.worker_id, result_filename=args.result_filename)

@@ -1,6 +1,6 @@
 from distribute_ml.master import Master
-# from torch.nn import optim
 from torch import optim
+import random
 
 class DistributionConfig:
     # required
@@ -12,14 +12,8 @@ class DistributionConfig:
     # (default=requirements.txt)
     MODEL_REQUIREMENTS = "./requirements.txt"
     
-    # (default=10)
-    TASK_PARTITION = 2
-    
     # required
-    TASK_OUTPUT = "weight"
-
-    # required
-    OPTIMIZER = optim.SGD
+    TASK_OUTPUT = "weight"    
     
     # required
     OPTIMIZER_PARAMS = {
@@ -30,12 +24,15 @@ class DistributionConfig:
     # required
     INITIAL_PARAMS = {
         "linear": {
-            "weight": [[0.0 for _ in range(8)]],  
+            "weight": [[0.0 for _ in range(30)]],  
             "bias": [0.0]
         }
     }
 
-    TOTAL_ITERATIONS = 15
+    # (default=10)
+    TASK_PARTITION = 2
+
+    TOTAL_ITERATIONS = 4
 
     TRAIN_SPLIT = 0.7
     TEST_SPLIT = 0.15
