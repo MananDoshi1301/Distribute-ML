@@ -433,21 +433,6 @@ if __name__ == "__main__":
         compute_gradients(model, X_tensor, y_tensor, output_path=args.output_path, worker_id=args.worker_id, result_filename=args.result_filename)
 ```
 
-## 🔧 Advanced Configuration
-
-Customize your deployment by modifying configuration files:
-
-```yaml
-# Example of worker configuration
-workers:
-  min_count: 2
-  max_count: 10
-  auto_scale: true
-  resource_limits:
-    cpu: 4
-    memory: "8G"
-```
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a pull request.
