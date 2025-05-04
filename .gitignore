@@ -4,4 +4,4 @@ data
 conf
 task_data
 IS_log.pdf
-*.log
+*.logsample_models/major_model_3_phish/data.csv
